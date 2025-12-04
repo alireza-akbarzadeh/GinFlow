@@ -205,13 +205,13 @@ docker-build:
 ## docker-run: Run application in Docker
 docker-run:
 	@echo "$(GREEN)Starting Docker containers...$(NC)"
-	docker-compose -f ci/docker/docker-compose.yml up -d
+	docker-compose up -d
 	@echo "$(GREEN)✓ Application running in Docker!$(NC)"
 
 ## docker-stop: Stop Docker containers
 docker-stop:
 	@echo "$(YELLOW)Stopping Docker containers...$(NC)"
-	docker-compose -f ci/docker/docker-compose.yml down
+	docker-compose down
 	@echo "$(GREEN)✓ Containers stopped!$(NC)"
 
 ## check: Run all checks (fmt, vet, test)
