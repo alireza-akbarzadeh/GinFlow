@@ -2,7 +2,10 @@ module github.com/alireza-akbarzadeh/restful-app
 
 go 1.25.4
 
-require github.com/golang-migrate/migrate v3.5.4+incompatible
+require (
+	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang-migrate/migrate v3.5.4+incompatible
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
