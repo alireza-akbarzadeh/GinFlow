@@ -71,6 +71,12 @@ func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo *reposito
 
 			// Category management
 			protected.POST("/categories", handler.CreateCategory)
+
+			// User management
+			protected.PUT("/auth/password", handler.UpdatePassword)
+			protected.GET("/users", handler.GetAllUsers)
+			protected.PUT("/users/:id", handler.UpdateUser)
+			protected.DELETE("/users/:id", handler.DeleteUser)
 		}
 	}
 

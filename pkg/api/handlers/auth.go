@@ -30,6 +30,12 @@ type LoginResponse struct {
 	User  *repository.User `json:"user"`
 }
 
+// UpdatePasswordRequest represents the password update request payload
+type UpdatePasswordRequest struct {
+	OldPassword string `json:"oldPassword" binding:"required"`
+	NewPassword string `json:"newPassword" binding:"required,min=8"`
+}
+
 // Login handles user authentication
 // @Summary      User login
 // @Description  Authenticate user and return JWT token
@@ -77,6 +83,9 @@ func (h *Handler) Login(c *gin.Context) {
 		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to generate token")
 		return
 	}
+
+	// Update last login time
+	_ = h.Repos.Users.UpdateLastLogin(user.ID)
 
 	// Don't expose password in response
 	user.Password = ""
@@ -140,4 +149,65 @@ func (h *Handler) Register(c *gin.Context) {
 	createdUser.Password = ""
 
 	c.JSON(http.StatusCreated, createdUser)
+}
+
+// UpdatePassword handles password updates
+// @Summary      Update password
+// @Description  Update the authenticated user's password
+// @Tags         Authentication
+// @Accept       json
+// @Produce      json
+// @Param        request body UpdatePasswordRequest true "Password update details"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  helpers.ErrorResponse
+// @Failure      401  {object}  helpers.ErrorResponse
+// @Failure      500  {object}  helpers.ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/v1/auth/password [put]
+func (h *Handler) UpdatePassword(c *gin.Context) {
+	var req UpdatePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helpers.RespondWithError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Get authenticated user
+	user := helpers.GetUserFromContext(c)
+	if user == nil {
+		helpers.RespondWithError(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get fresh user data to verify old password
+	dbUser, err := h.Repos.Users.Get(user.ID)
+	if err != nil {
+		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve user")
+		return
+	}
+	if dbUser == nil {
+		helpers.RespondWithError(c, http.StatusNotFound, "User not found")
+		return
+	}
+
+	// Verify old password
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(req.OldPassword))
+	if err != nil {
+		helpers.RespondWithError(c, http.StatusUnauthorized, "Invalid old password")
+		return
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to hash password")
+		return
+	}
+
+	// Update password
+	if err := h.Repos.Users.UpdatePassword(user.ID, string(hashedPassword)); err != nil {
+		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to update password")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
 }
