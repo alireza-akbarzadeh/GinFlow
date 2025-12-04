@@ -25,9 +25,7 @@ func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo *reposito
 	})
 
 	// Health check endpoint
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
+	router.GET("/health", handler.ShowHealthPage)
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
