@@ -47,6 +47,39 @@ definitions:
         type: integer
     type: object
   models.Category:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/models.Category'
+        type: array
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      image:
+        type: string
+      metaDescription:
+        type: string
+      metaTitle:
+        type: string
+      name:
+        minLength: 3
+        type: string
+      parent:
+        $ref: '#/definitions/models.Category'
+      parentId:
+        type: integer
+      slug:
+        type: string
+      status:
+        description: active, inactive
+        type: string
+      updatedAt:
+        type: string
+    required:
+    - name
     type: object
   models.Comment:
     properties:
@@ -94,6 +127,78 @@ definitions:
     - name
     type: object
   models.Product:
+    properties:
+      brand:
+        type: string
+      categories:
+        items:
+          $ref: '#/definitions/models.Category'
+        type: array
+      createdAt:
+        type: string
+      description:
+        type: string
+      dimensions:
+        type: string
+      discount:
+        type: number
+      finalPrice:
+        type: number
+      id:
+        type: integer
+      image:
+        type: string
+      images:
+        example:
+        - '["url1"'
+        - '"url2"]'
+        items:
+          type: string
+        type: array
+      metaDescription:
+        type: string
+      metaTitle:
+        type: string
+      name:
+        minLength: 3
+        type: string
+      price:
+        type: number
+      rating:
+        type: number
+      reviewsCount:
+        type: integer
+      sku:
+        description: Advanced Product Details
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      stock:
+        minimum: 0
+        type: integer
+      tags:
+        example:
+        - '["tag1"'
+        - '"tag2"]'
+        items:
+          type: string
+        type: array
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+      userId:
+        type: integer
+      views:
+        type: integer
+      weight:
+        type: number
+    required:
+    - name
+    - price
+    - stock
     type: object
   models.Profile:
     properties:

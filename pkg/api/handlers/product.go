@@ -186,6 +186,7 @@ func (h *Handler) UpdateProduct(c *gin.Context) {
 	existingProduct.Brand = updateData.Brand
 	existingProduct.Weight = updateData.Weight
 	existingProduct.Dimensions = updateData.Dimensions
+
 	if err := h.Repos.Products.Update(existingProduct); err != nil {
 		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to update product")
 		return

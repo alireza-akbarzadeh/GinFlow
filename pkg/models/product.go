@@ -16,11 +16,11 @@ type Product struct {
 
 	// Advanced Product Details
 	SKU    string         `json:"sku" gorm:"unique;not null"`
-	Status string         `json:"status" gorm:"default:'active'"` // active, draft, out_of_stock
+	Status string         `json:"status" gorm:"default:'active'"`
 	Slug   string         `json:"slug" gorm:"uniqueIndex"`
 	Image  string         `json:"image"`
-	Images pq.StringArray `json:"images" gorm:"type:text[]"`
-	Tags   pq.StringArray `json:"tags" gorm:"type:text[]"`
+	Images pq.StringArray `json:"images" gorm:"type:text[]" swaggertype:"array,string" example:"[\"url1\",\"url2\"]"`
+	Tags   pq.StringArray `json:"tags" gorm:"type:text[]" swaggertype:"array,string" example:"[\"tag1\",\"tag2\"]"`
 
 	MetaTitle       string `json:"metaTitle"`
 	MetaDescription string `json:"metaDescription"`
@@ -42,5 +42,5 @@ type Product struct {
 
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt,omitempty" swaggerignore:"true"`
 }
