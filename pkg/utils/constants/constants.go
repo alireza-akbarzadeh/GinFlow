@@ -21,6 +21,8 @@ const (
 	DEFAULT_REQUEST_TIMEOUT_DURATION int    = 60   // seconds
 	DEFAULT_WATCHER_SLEEP_INTERVAL   int    = 5000 // milliseconds
 	DEFAULT_GZIP_LEVEL               int    = 5
+	DEFAULT_RATE_LIMIT               int    = 20
+	DEFAULT_RATE_BURST               int    = 50
 
 	// features
 	FEATURE_SERVICE    string = "service"
