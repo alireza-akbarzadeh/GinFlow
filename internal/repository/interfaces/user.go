@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
+	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
 )
 
 type UserRepositoryInterface interface {
@@ -15,4 +16,5 @@ type UserRepositoryInterface interface {
 	Update(ctx context.Context, user *models.User) error
 	Delete(ctx context.Context, id int) error
 	UpdateLastLogin(ctx context.Context, id int) error
+	ListWithPagination(ctx context.Context, req *pagination.PaginationRequest) ([]*models.User, *pagination.PaginationResponse, error)
 }

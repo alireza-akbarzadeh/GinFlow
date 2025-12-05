@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
+	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
 )
 
 type EventRepositoryInterface interface {
@@ -12,4 +13,6 @@ type EventRepositoryInterface interface {
 	GetAll(ctx context.Context) ([]*models.Event, error)
 	Update(ctx context.Context, event *models.Event) error
 	Delete(ctx context.Context, id int) error
+	ListWithPagination(ctx context.Context, req *pagination.PaginationRequest) ([]*models.Event, *pagination.PaginationResponse, error)
+	GetByOwnerID(ctx context.Context, ownerID int) ([]*models.Event, error)
 }

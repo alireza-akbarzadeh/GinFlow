@@ -2,31 +2,60 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/helpers"
+	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
+	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
+	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
 	"github.com/gin-gonic/gin"
 )
 
-// GetAllUsers retrieves all users
+// GetAllUsers retrieves all users with pagination
 // @Summary      Get all users
-// @Description  Get a list of all registered users
+// @Description  Get a paginated list of all registered users
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Success      200  {array}   models.User
+// @Param        page      query     int     false  "Page number (default: 1)"
+// @Param        page_size query     int     false  "Page size (default: 20)"
+// @Success      200  {object}  helpers.PaginatedResponse{data=[]models.User}
+// @Failure      400  {object}  helpers.ErrorResponse
 // @Failure      401  {object}  helpers.ErrorResponse
 // @Failure      500  {object}  helpers.ErrorResponse
 // @Security     BearerAuth
 // @Router       /api/v1/users [get]
 func (h *Handler) GetAllUsers(c *gin.Context) {
-	users, err := h.Repos.Users.GetAll(c.Request.Context())
+	ctx := c.Request.Context()
+	logging.Debug(ctx, "handling GetAllUsers request")
+
+	// Parse pagination parameters
+	req := pagination.NewPaginationRequest()
+	if page := c.Query("page"); page != "" {
+		if p, err := strconv.Atoi(page); err == nil && p > 0 {
+			req.Page = p
+		}
+	}
+	if pageSize := c.Query("page_size"); pageSize != "" {
+		if ps, err := strconv.Atoi(pageSize); err == nil && ps > 0 && ps <= 100 {
+			req.PageSize = ps
+		}
+	}
+
+	users, paginationResp, err := h.Repos.Users.ListWithPagination(ctx, req)
 	if err != nil {
-		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve users")
+		logging.Error(ctx, "failed to retrieve users", err)
+		if appErr, ok := err.(*appErrors.AppError); ok {
+			helpers.RespondWithError(c, appErr.StatusCode, appErr.Message)
+		} else {
+			helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve users")
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, users)
+	logging.Info(ctx, "users retrieved successfully", "count", len(users), "page", req.Page)
+	helpers.RespondWithPaginatedData(c, http.StatusOK, users, paginationResp)
 }
 
 // UpdateUser updates a user's profile
@@ -64,14 +93,18 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		return
 	}
 
+	ctx := c.Request.Context()
+	logging.Debug(ctx, "updating user", "user_id", id, "auth_user_id", authUser.ID)
+
 	// Get existing user
-	existingUser, err := h.Repos.Users.Get(c.Request.Context(), id)
+	existingUser, err := h.Repos.Users.Get(ctx, id)
 	if err != nil {
-		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve user")
-		return
-	}
-	if existingUser == nil {
-		helpers.RespondWithError(c, http.StatusNotFound, "User not found")
+		logging.Error(ctx, "failed to get user for update", err, "user_id", id)
+		if appErr, ok := err.(*appErrors.AppError); ok {
+			helpers.RespondWithError(c, appErr.StatusCode, appErr.Message)
+		} else {
+			helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve user")
+		}
 		return
 	}
 
@@ -86,11 +119,17 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 	existingUser.Email = updateData.Email
 	// Note: Password update is handled by a separate endpoint
 
-	if err := h.Repos.Users.Update(c.Request.Context(), existingUser); err != nil {
-		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to update user")
+	if err := h.Repos.Users.Update(ctx, existingUser); err != nil {
+		logging.Error(ctx, "failed to update user", err, "user_id", id)
+		if appErr, ok := err.(*appErrors.AppError); ok {
+			helpers.RespondWithError(c, appErr.StatusCode, appErr.Message)
+		} else {
+			helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to update user")
+		}
 		return
 	}
 
+	logging.Info(ctx, "user updated successfully", "user_id", id, "email", existingUser.Email)
 	c.JSON(http.StatusOK, existingUser)
 }
 

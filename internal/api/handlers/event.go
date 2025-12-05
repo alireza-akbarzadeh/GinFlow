@@ -2,9 +2,13 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/helpers"
+	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
+	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
+	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,13 +37,22 @@ func (h *Handler) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	ctx := c.Request.Context()
+	logging.Debug(ctx, "creating new event", "name", event.Name, "owner_id", user.ID)
+
 	event.OwnerID = user.ID
-	createdEvent, err := h.Repos.Events.Insert(c.Request.Context(), &event)
+	createdEvent, err := h.Repos.Events.Insert(ctx, &event)
 	if err != nil {
-		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to create event")
+		logging.Error(ctx, "failed to create event", err, "name", event.Name, "owner_id", user.ID)
+		if appErr, ok := err.(*appErrors.AppError); ok {
+			helpers.RespondWithError(c, appErr.StatusCode, appErr.Message)
+		} else {
+			helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to create event")
+		}
 		return
 	}
 
+	logging.Info(ctx, "event created successfully", "event_id", createdEvent.ID, "name", createdEvent.Name)
 	c.JSON(http.StatusCreated, createdEvent)
 }
 
@@ -62,36 +75,66 @@ func (h *Handler) GetEvent(c *gin.Context) {
 		return
 	}
 
-	event, err := h.Repos.Events.Get(c.Request.Context(), id)
+	ctx := c.Request.Context()
+	logging.Debug(ctx, "retrieving event", "event_id", id)
+
+	event, err := h.Repos.Events.Get(ctx, id)
 	if err != nil {
-		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve event")
-		return
-	}
-	if event == nil {
-		helpers.RespondWithError(c, http.StatusNotFound, "Event not found")
+		logging.Error(ctx, "failed to retrieve event", err, "event_id", id)
+		if appErr, ok := err.(*appErrors.AppError); ok {
+			helpers.RespondWithError(c, appErr.StatusCode, appErr.Message)
+		} else {
+			helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve event")
+		}
 		return
 	}
 
+	logging.Debug(ctx, "event retrieved successfully", "event_id", id, "name", event.Name)
 	c.JSON(http.StatusOK, event)
 }
 
-// GetAllEvents retrieves all events
+// GetAllEvents retrieves all events with pagination
 // @Summary      Get all events
-// @Description  Get a list of all events
+// @Description  Get a paginated list of all events
 // @Tags         Events
 // @Accept       json
 // @Produce      json
-// @Success      200  {array}   models.Event
+// @Param        page      query     int     false  "Page number (default: 1)"
+// @Param        page_size query     int     false  "Page size (default: 20)"
+// @Success      200  {object}  helpers.PaginatedResponse{data=[]models.Event}
+// @Failure      400  {object}  helpers.ErrorResponse
 // @Failure      500  {object}  helpers.ErrorResponse
 // @Router       /api/v1/events [get]
 func (h *Handler) GetAllEvents(c *gin.Context) {
-	events, err := h.Repos.Events.GetAll(c.Request.Context())
+	ctx := c.Request.Context()
+	logging.Debug(ctx, "handling GetAllEvents request")
+
+	// Parse pagination parameters
+	req := pagination.NewPaginationRequest()
+	if page := c.Query("page"); page != "" {
+		if p, err := strconv.Atoi(page); err == nil && p > 0 {
+			req.Page = p
+		}
+	}
+	if pageSize := c.Query("page_size"); pageSize != "" {
+		if ps, err := strconv.Atoi(pageSize); err == nil && ps > 0 && ps <= 100 {
+			req.PageSize = ps
+		}
+	}
+
+	events, paginationResp, err := h.Repos.Events.ListWithPagination(ctx, req)
 	if err != nil {
-		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve events")
+		logging.Error(ctx, "failed to retrieve events", err)
+		if appErr, ok := err.(*appErrors.AppError); ok {
+			helpers.RespondWithError(c, appErr.StatusCode, appErr.Message)
+		} else {
+			helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve events")
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, events)
+	logging.Info(ctx, "events retrieved successfully", "count", len(events), "page", req.Page)
+	helpers.RespondWithPaginatedData(c, http.StatusOK, events, paginationResp)
 }
 
 // UpdateEvent updates an existing event
