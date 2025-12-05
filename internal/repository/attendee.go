@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 
+	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
+	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
 	"gorm.io/gorm"
 )
@@ -19,10 +21,15 @@ func NewAttendeeRepository(db *gorm.DB) *AttendeeRepository {
 
 // Insert creates a new attendee record
 func (r *AttendeeRepository) Insert(ctx context.Context, attendee *models.Attendee) (*models.Attendee, error) {
+	logging.Debug(ctx, "creating attendee registration", "event_id", attendee.EventID, "user_id", attendee.UserID)
+
 	result := r.DB.WithContext(ctx).Create(attendee)
 	if result.Error != nil {
-		return nil, result.Error
+		logging.Error(ctx, "failed to create attendee", result.Error, "event_id", attendee.EventID, "user_id", attendee.UserID)
+		return nil, appErrors.New(appErrors.ErrDatabaseOperation, "failed to register attendee")
 	}
+
+	logging.Info(ctx, "attendee registered successfully", "attendee_id", attendee.ID, "event_id", attendee.EventID, "user_id", attendee.UserID)
 	return attendee, nil
 }
 
