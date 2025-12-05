@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
+	"github.com/alireza-akbarzadeh/ginflow/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 

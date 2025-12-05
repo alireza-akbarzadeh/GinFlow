@@ -11,11 +11,11 @@ import (
 	"time"
 
 	_ "github.com/alireza-akbarzadeh/ginflow/docs"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/api/handlers"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/api/routers"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/config"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/database"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
+	"github.com/alireza-akbarzadeh/ginflow/internal/api/handlers"
+	"github.com/alireza-akbarzadeh/ginflow/internal/api/routers"
+	"github.com/alireza-akbarzadeh/ginflow/internal/config"
+	"github.com/alireza-akbarzadeh/ginflow/internal/database"
+	"github.com/alireza-akbarzadeh/ginflow/internal/repository"
 	_ "github.com/joho/godotenv/autoload"
 )
 

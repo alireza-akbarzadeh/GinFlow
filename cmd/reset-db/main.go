@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
+	"github.com/alireza-akbarzadeh/ginflow/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

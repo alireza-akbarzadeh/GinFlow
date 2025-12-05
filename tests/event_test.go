@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	models "github.com/alireza-akbarzadeh/ginflow/pkg/models"
+	models "github.com/alireza-akbarzadeh/ginflow/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 

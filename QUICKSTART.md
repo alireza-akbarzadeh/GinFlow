@@ -106,14 +106,14 @@ curl -X GET http://localhost:8080/api/v1/events \
 
 Let's say you want to add a "Get User Profile" endpoint.
 
-**Step 3.1.1: Add the handler function** in `pkg/api/handlers/` (create a new file like `profile.go`):
+**Step 3.1.1: Add the handler function** in `internal/api/handlers/` (create a new file like `profile.go`):
 
 ```go
 package handlers
 
 import (
     "net/http"
-    "github.com/alireza-akbarzadeh/ginflow/pkg/api/helpers"
+    "github.com/alireza-akbarzadeh/ginflow/internal/api/helpers"
     "github.com/gin-gonic/gin"
 )
 
@@ -147,7 +147,7 @@ func (h *Handler) GetUserProfile(c *gin.Context) {
 }
 ```
 
-**Step 3.1.2: Add the route** in `pkg/api/routers/router.go`:
+**Step 3.1.2: Add the route** in `internal/api/routers/router.go`:
 
 ```go
 // In the protected routes section
@@ -166,7 +166,7 @@ Restart the server (if using `make dev`, it should auto-restart). Visit Swagger 
 
 ### 3.2 Adding a Database Table
 
-**Step 3.2.1: Create the model** in `pkg/models/` (create a new file like `comment.go`):
+**Step 3.2.1: Create the model** in `internal/models/` (create a new file like `comment.go`):
 
 ```go
 package models
@@ -187,13 +187,13 @@ type Comment struct {
 }
 ```
 
-**Step 3.2.2: Create repository methods** in `pkg/repository/` (create a new file like `comment.go`):
+**Step 3.2.2: Create repository methods** in `internal/repository/` (create a new file like `comment.go`):
 
 ```go
 package repository
 
 import (
-    "github.com/alireza-akbarzadeh/ginflow/pkg/models"
+    "github.com/alireza-akbarzadeh/ginflow/internal/models"
     "gorm.io/gorm"
 )
 
@@ -216,7 +216,7 @@ func (r *CommentRepository) GetByEventID(eventID uint) ([]*models.Comment, error
 }
 ```
 
-**Step 3.2.3: Update Models struct** in `pkg/repository/repository.go`:
+**Step 3.2.3: Update Models struct** in `internal/repository/repository.go`:
 
 ```go
 type Models struct {
@@ -339,8 +339,8 @@ make docker-run
 
 1. **Week 1-2**: Get comfortable with the existing CRUD operations
 
-   - Understand how routes work in `pkg/api/routers/router.go`
-   - Study the authentication flow in `pkg/api/handlers/auth.go`
+   - Understand how routes work in `internal/api/routers/router.go`
+   - Study the authentication flow in `internal/api/handlers/auth.go`
    - Practice making API requests using Swagger UI
 
 2. **Week 3-4**: Add your first feature
@@ -351,8 +351,8 @@ make docker-run
 
 3. **Week 5-6**: Work with databases
 
-   - Create a new model in `pkg/models/`
-   - Add repository methods in `pkg/repository/`
+   - Create a new model in `internal/models/`
+   - Add repository methods in `internal/repository/`
    - Update AutoMigrate in `cmd/server/main.go`
 
 4. **Week 7-8**: Advanced topics
@@ -364,7 +364,7 @@ make docker-run
 ## Need Help?
 
 - Check the main `README.md` for detailed documentation
-- Look at existing code in `pkg/api/handlers/`, `pkg/models/`, and `pkg/repository/`
+- Look at existing code in `internal/api/handlers/`, `internal/models/`, and `internal/repository/`
 - Study the profile implementation as a complete example
 - Search for Go/GORM tutorials for specific topics
 - Ask questions in Go community forums

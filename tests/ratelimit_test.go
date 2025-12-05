@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/alireza-akbarzadeh/ginflow/pkg/utils/constants"
+	"github.com/alireza-akbarzadeh/ginflow/internal/utils/constants"
 	"github.com/stretchr/testify/assert"
 )
 
