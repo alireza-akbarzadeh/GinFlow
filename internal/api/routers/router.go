@@ -6,7 +6,7 @@ import (
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/handlers"
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/middleware"
 	"github.com/alireza-akbarzadeh/ginflow/internal/repository"
-	"github.com/alireza-akbarzadeh/ginflow/internal/utils/constants"
+	"github.com/alireza-akbarzadeh/ginflow/internal/constants"
 	"github.com/alireza-akbarzadeh/ginflow/internal/web"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
