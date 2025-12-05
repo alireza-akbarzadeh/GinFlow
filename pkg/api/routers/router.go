@@ -37,72 +37,31 @@ func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo *reposito
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Public routes
-		auth := v1.Group("/auth")
-		{
-			auth.POST("/register", handler.Register)
-			auth.POST("/login", handler.Login)
-			auth.POST("/logout", handler.Logout)
-		}
+		// Auth Routes
+		SetupAuthRoutes(v1, handler)
 
-		// Public event routes
-		events := v1.Group("/events")
-		{
-			events.GET("", handler.GetAllEvents)
-			events.GET("/:id", handler.GetEvent)
-			events.GET("/:id/attendees", handler.GetAttendees)
-			events.GET("/:id/comments", handler.GetEventComments)
-		}
+		// Event Routes
+		SetupEventRoutes(v1, handler)
 
-		// Public attendee routes
-		attendees := v1.Group("/attendees")
-		{
-			attendees.GET("/:id/events", handler.GetEventsByAttendee)
-		}
+		// Attendee Routes
+		SetupAttendeeRoutes(v1, handler)
 
-		// Public category routes
-		categories := v1.Group("/categories")
-		{
-			categories.GET("", handler.GetAllCategories)
-		}
+		// Category Routes
+		SetupCategoryRoutes(v1, handler)
+
+		// Product Routes
+		SetupProductRoutes(v1, handler)
 
 		// Protected routes (require authentication)
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware(jwtSecret, userRepo))
 		{
-			// Event management
-			protected.POST("/events", handler.CreateEvent)
-			protected.PUT("/events/:id", handler.UpdateEvent)
-			protected.DELETE("/events/:id", handler.DeleteEvent)
-
-			// Comment management
-			protected.POST("/events/:id/comments", handler.CreateComment)
-			protected.DELETE("/events/:id/comments/:commentId", handler.DeleteComment)
-
-			// Attendee management
-			protected.POST("/events/:id/attendees/:userId", handler.AddAttendee)
-			protected.DELETE("/events/:id/attendees/:userId", handler.RemoveAttendee)
-
-			// Category management
-			protected.POST("/categories", handler.CreateCategory)
-
-			// User management
-			protected.PUT("/auth/password", handler.UpdatePassword)
-			protected.GET("/users", handler.GetAllUsers)
-			protected.PUT("/users/:id", handler.UpdateUser)
-			protected.DELETE("/users/:id", handler.DeleteUser)
-
-			//user profiles
-			protected.GET("/profile", handler.GetProfile)
-			protected.POST("/profile", handler.CreateProfile)
-			protected.PUT("/profile", handler.UpdateProfile)
-			protected.DELETE("/profile", handler.DeleteProfile)
-
-			//	order management
-			protected.GET("/orders")
-			protected.POST("/orders")
-			protected.DELETE("/orders/:id")
-			protected.PUT("/orders/:id")
+			SetupProtectedAuthRoutes(protected, handler)
+			SetupProtectedEventRoutes(protected, handler)
+			SetupProtectedCategoryRoutes(protected, handler)
+			SetupProtectedUserRoutes(protected, handler)
+			SetupProtectedProfileRoutes(protected, handler)
+			SetupProtectedProductRoutes(protected, handler)
 		}
 	}
 

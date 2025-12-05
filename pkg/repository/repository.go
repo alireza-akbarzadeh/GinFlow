@@ -10,6 +10,7 @@ type Models struct {
 	Categories *CategoryRepository
 	Comments   *CommentRepository
 	Profiles   *ProfileRepository
+	Products   *ProductRepository
 }
 
 // NewModels creates a new Models instance with all repositories
@@ -21,5 +22,6 @@ func NewModels(db *gorm.DB) *Models {
 		Categories: NewCategoryRepository(db),
 		Comments:   NewCommentRepository(db),
 		Profiles:   NewProfileRepository(db),
+		Products:   NewProductRepository(db),
 	}
 }

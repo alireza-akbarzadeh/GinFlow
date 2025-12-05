@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/helpers"
 	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
@@ -26,6 +27,11 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 	if err := c.ShouldBindJSON(&category); err != nil {
 		helpers.RespondWithError(c, http.StatusBadRequest, err.Error())
 		return
+	}
+
+	// Generate slug if not provided
+	if category.Slug == "" {
+		category.Slug = strings.ToLower(strings.ReplaceAll(category.Name, " ", "-"))
 	}
 
 	createdCategory, err := h.Repos.Categories.Insert(&category)
@@ -54,4 +60,30 @@ func (h *Handler) GetAllCategories(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, categories)
+}
+
+// GetCategoryBySlug retrieves a category by slug
+// @Summary      Get category by slug
+// @Description  Get a category by its slug
+// @Tags         Categories
+// @Accept       json
+// @Produce      json
+// @Param        slug   path      string  true  "Category Slug"
+// @Success      200    {object}  models.Category
+// @Failure      404    {object}  helpers.ErrorResponse
+// @Failure      500    {object}  helpers.ErrorResponse
+// @Router       /api/v1/categories/{slug} [get]
+func (h *Handler) GetCategoryBySlug(c *gin.Context) {
+	slug := c.Param("slug")
+	category, err := h.Repos.Categories.GetBySlug(slug)
+	if err != nil {
+		helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve category")
+		return
+	}
+	if category == nil {
+		helpers.RespondWithError(c, http.StatusNotFound, "Category not found")
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
 }

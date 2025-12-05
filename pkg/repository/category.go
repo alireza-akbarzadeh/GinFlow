@@ -37,7 +37,20 @@ func (r *CategoryRepository) GetAll() ([]*models.Category, error) {
 // Get retrieves a category by ID
 func (r *CategoryRepository) Get(id int) (*models.Category, error) {
 	var category models.Category
-	result := r.DB.First(&category, id)
+	result := r.DB.Preload("Children").Preload("Parent").First(&category, id)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, result.Error
+	}
+	return &category, nil
+}
+
+// GetBySlug retrieves a category by slug
+func (r *CategoryRepository) GetBySlug(slug string) (*models.Category, error) {
+	var category models.Category
+	result := r.DB.Preload("Children").Preload("Parent").Where("slug = ?", slug).First(&category)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil
