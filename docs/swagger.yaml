@@ -1,5 +1,16 @@
 basePath: /
 definitions:
+  handlers.AddItemRequest:
+    properties:
+      productId:
+        type: integer
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - productId
+    - quantity
+    type: object
   handlers.RegisterRequest:
     properties:
       email:
@@ -45,6 +56,45 @@ definitions:
         $ref: '#/definitions/models.User'
       userId:
         type: integer
+    type: object
+  models.Basket:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/models.BasketItem'
+        type: array
+      status:
+        description: active, completed
+        type: string
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+      userId:
+        type: integer
+    type: object
+  models.BasketItem:
+    properties:
+      basketId:
+        type: integer
+      createdAt:
+        type: string
+      id:
+        type: integer
+      product:
+        $ref: '#/definitions/models.Product'
+      productId:
+        type: integer
+      quantity:
+        type: integer
+      unitPrice:
+        type: number
+      updatedAt:
+        type: string
     type: object
   models.Category:
     properties:
@@ -380,6 +430,124 @@ paths:
       summary: User registration
       tags:
       - Authentication
+  /api/v1/basket:
+    delete:
+      consumes:
+      - application/json
+      description: Remove all items from the active basket
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Clear basket
+      tags:
+      - Basket
+    get:
+      consumes:
+      - application/json
+      description: Get the active basket for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Basket'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user basket
+      tags:
+      - Basket
+  /api/v1/basket/items:
+    post:
+      consumes:
+      - application/json
+      description: Add a product to the user's active basket
+      parameters:
+      - description: Item to add
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AddItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Basket'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add item to basket
+      tags:
+      - Basket
+  /api/v1/basket/items/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an item from the basket by Item ID
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Basket'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove item from basket
+      tags:
+      - Basket
   /api/v1/categories:
     get:
       consumes:
