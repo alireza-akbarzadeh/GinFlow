@@ -24,7 +24,7 @@ const (
 )
 
 // AuthMiddleware creates a new authentication middleware
-func AuthMiddleware(jwtSecret string, userRepo *repository.UserRepository) gin.HandlerFunc {
+func AuthMiddleware(jwtSecret string, userRepo repository.UserRepositoryInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authorizationHeader := c.GetHeader("Authorization")
 		if authorizationHeader == "" {

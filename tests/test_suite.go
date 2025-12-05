@@ -7,12 +7,15 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/handlers"
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/routers"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
 	"github.com/alireza-akbarzadeh/ginflow/internal/repository"
+	"github.com/alireza-akbarzadeh/ginflow/tests/mocks"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +29,40 @@ type TestSuite struct {
 	Router    *gin.Engine
 	Handler   *handlers.Handler
 	JWTSecret string
+	Mocks     *repository.Models
+}
+
+// SetupMockTestSuite initializes the test suite with mocks
+func SetupMockTestSuite(t *testing.T) *TestSuite {
+	gin.SetMode(gin.TestMode)
+
+	// Create mocks
+	mockRepos := &repository.Models{
+		Users:      &mocks.UserRepositoryMock{},
+		Events:     &mocks.EventRepositoryMock{},
+		Attendees:  &mocks.AttendeeRepositoryMock{},
+		Categories: &mocks.CategoryRepositoryMock{},
+		Comments:   &mocks.CommentRepositoryMock{},
+		Profiles:   &mocks.ProfileRepositoryMock{},
+		Products:   &mocks.ProductRepositoryMock{},
+		Baskets:    &mocks.BasketRepositoryMock{},
+	}
+
+	// JWT secret for testing
+	jwtSecret := "test-jwt-secret-key"
+
+	// Create handler
+	handler := handlers.NewHandler(mockRepos, jwtSecret)
+
+	// Create router
+	router := routers.SetupRouter(handler, jwtSecret, mockRepos.Users)
+
+	return &TestSuite{
+		Router:    router,
+		Handler:   handler,
+		JWTSecret: jwtSecret,
+		Mocks:     mockRepos,
+	}
 }
 
 // SetupTestSuite initializes the test suite with database and router
@@ -163,4 +200,13 @@ func (ts *TestSuite) createTestEvent(t *testing.T, token string, event models.Ev
 	require.NoError(t, err)
 
 	return &createdEvent
+}
+
+// GenerateToken generates a JWT token for testing
+func (ts *TestSuite) GenerateToken(userID int) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": userID,
+		"exp":     time.Now().Add(time.Hour * 72).Unix(),
+	})
+	return token.SignedString([]byte(ts.JWTSecret))
 }

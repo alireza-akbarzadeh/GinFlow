@@ -6,25 +6,38 @@ import (
 	"testing"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/handlers"
+	"github.com/alireza-akbarzadeh/ginflow/internal/models"
+	"github.com/alireza-akbarzadeh/ginflow/tests/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // TestAuthenticationFlow tests the complete authentication flow
 func TestAuthenticationFlow(t *testing.T) {
-	ts := SetupTestSuite(t)
-	if ts == nil {
-		t.Skip("Test suite setup failed")
-		return
-	}
-	defer ts.TeardownTestSuite(t)
+	ts := SetupMockTestSuite(t)
 
-	t.Run("user registration and login", func(t *testing.T) {
+	mockUserRepo := ts.Mocks.Users.(*mocks.UserRepositoryMock)
+
+	t.Run("user registration", func(t *testing.T) {
 		// Test user registration
 		registerReq := handlers.RegisterRequest{
 			Email:    "test@example.com",
 			Password: "password123",
 			Name:     "Test User",
 		}
+
+		// Expect GetByEmail to return nil (user not found)
+		mockUserRepo.On("GetByEmail", mock.Anything, "test@example.com").Return(nil, nil).Once()
+
+		// Expect Insert to return created user
+		mockUserRepo.On("Insert", mock.Anything, mock.MatchedBy(func(u *models.User) bool {
+			return u.Email == "test@example.com" && u.Name == "Test User"
+		})).Return(&models.User{
+			ID:    1,
+			Email: "test@example.com",
+			Name:  "Test User",
+		}, nil).Once()
 
 		w := ts.createRequest("POST", "/api/v1/auth/register", registerReq)
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -43,6 +56,20 @@ func TestAuthenticationFlow(t *testing.T) {
 			Email:    "test@example.com",
 			Password: "password123",
 		}
+
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		user := &models.User{
+			ID:       1,
+			Email:    "test@example.com",
+			Name:     "Test User",
+			Password: string(hashedPassword),
+		}
+
+		// Expect GetByEmail to return user
+		mockUserRepo.On("GetByEmail", mock.Anything, "test@example.com").Return(user, nil).Once()
+
+		// Expect UpdateLastLogin
+		mockUserRepo.On("UpdateLastLogin", mock.Anything, 1).Return(nil).Once()
 
 		w := ts.createRequest("POST", "/api/v1/auth/login", loginReq)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -64,6 +91,9 @@ func TestAuthenticationFlow(t *testing.T) {
 			Name:     "Test User",
 		}
 
+		// Expect GetByEmail to return existing user
+		mockUserRepo.On("GetByEmail", mock.Anything, "test@example.com").Return(&models.User{ID: 1}, nil).Once()
+
 		w := ts.createRequest("POST", "/api/v1/auth/register", registerReq)
 		assert.Equal(t, http.StatusConflict, w.Code)
 	})
@@ -75,6 +105,17 @@ func TestAuthenticationFlow(t *testing.T) {
 			Password: "wrongpassword",
 		}
 
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		user := &models.User{
+			ID:       1,
+			Email:    "test@example.com",
+			Name:     "Test User",
+			Password: string(hashedPassword),
+		}
+
+		// Expect GetByEmail to return user
+		mockUserRepo.On("GetByEmail", mock.Anything, "test@example.com").Return(user, nil).Once()
+
 		w := ts.createRequest("POST", "/api/v1/auth/login", loginReq)
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -85,6 +126,9 @@ func TestAuthenticationFlow(t *testing.T) {
 			Email:    "nonexistent@example.com",
 			Password: "password123",
 		}
+
+		// Expect GetByEmail to return nil
+		mockUserRepo.On("GetByEmail", mock.Anything, "nonexistent@example.com").Return(nil, nil).Once()
 
 		w := ts.createRequest("POST", "/api/v1/auth/login", loginReq)
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -103,12 +147,7 @@ func TestAuthenticationFlow(t *testing.T) {
 
 // TestAuthenticationValidation tests input validation for authentication endpoints
 func TestAuthenticationValidation(t *testing.T) {
-	ts := SetupTestSuite(t)
-	if ts == nil {
-		t.Skip("Test suite setup failed")
-		return
-	}
-	defer ts.TeardownTestSuite(t)
+	ts := SetupMockTestSuite(t)
 
 	t.Run("invalid email format", func(t *testing.T) {
 		registerReq := handlers.RegisterRequest{

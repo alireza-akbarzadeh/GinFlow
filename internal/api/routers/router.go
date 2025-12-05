@@ -15,7 +15,7 @@ import (
 )
 
 // SetupRouter configures and returns the main router
-func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo *repository.UserRepository) *gin.Engine {
+func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo repository.UserRepositoryInterface) *gin.Engine {
 	// Use gin.New() instead of Default() to use custom logger
 	router := gin.New()
 

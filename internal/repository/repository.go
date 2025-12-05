@@ -4,14 +4,14 @@ import "gorm.io/gorm"
 
 // Models holds all repository models
 type Models struct {
-	Users      *UserRepository
-	Events     *EventRepository
-	Attendees  *AttendeeRepository
-	Categories *CategoryRepository
-	Comments   *CommentRepository
-	Profiles   *ProfileRepository
-	Products   *ProductRepository
-	Baskets    *BasketRepository
+	Users      UserRepositoryInterface
+	Events     EventRepositoryInterface
+	Attendees  AttendeeRepositoryInterface
+	Categories CategoryRepositoryInterface
+	Comments   CommentRepositoryInterface
+	Profiles   ProfileRepositoryInterface
+	Products   ProductRepositoryInterface
+	Baskets    BasketRepositoryInterface
 }
 
 // NewModels creates a new Models instance with all repositories

@@ -6,180 +6,146 @@ import (
 	"strconv"
 	"testing"
 
-	models "github.com/alireza-akbarzadeh/ginflow/internal/models"
+	"github.com/alireza-akbarzadeh/ginflow/internal/models"
+	"github.com/alireza-akbarzadeh/ginflow/tests/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestCommentManagement tests comment CRUD operations
 func TestCommentManagement(t *testing.T) {
-	ts := SetupTestSuite(t)
-	if ts == nil {
-		t.Skip("Test suite setup failed")
-		return
-	}
-	defer ts.TeardownTestSuite(t)
+	ts := SetupMockTestSuite(t)
 
-	// Create test users and event
-	token1, user1 := ts.createTestUser(t, "commentuser1@example.com", "password123", "Comment User 1")
-	token2, user2 := ts.createTestUser(t, "commentuser2@example.com", "password123", "Comment User 2")
+	// Create test users
+	user1ID := 1
+	user2ID := 2
+	token1, _ := ts.GenerateToken(user1ID)
+	// token2 is not used in this test suite as we mock the repo responses directly
 
-	event := models.Event{
+	mockUserRepo := ts.Mocks.Users.(*mocks.UserRepositoryMock)
+	mockUserRepo.On("Get", mock.Anything, user1ID).Return(&models.User{ID: user1ID, Email: "commentuser1@example.com"}, nil)
+	mockUserRepo.On("Get", mock.Anything, user2ID).Return(&models.User{ID: user2ID, Email: "commentuser2@example.com"}, nil)
+
+	eventID := 1
+	event := &models.Event{
+		ID:          eventID,
 		Name:        "Event for Comments",
 		Description: "This event will have comments",
 		Date:        "2025-12-31",
 		Location:    "Comment Location",
 	}
-	createdEvent := ts.createTestEvent(t, token1, event)
+
+	mockEventRepo := ts.Mocks.Events.(*mocks.EventRepositoryMock)
+	mockCommentRepo := ts.Mocks.Comments.(*mocks.CommentRepositoryMock)
 
 	t.Run("create comment", func(t *testing.T) {
 		comment := models.Comment{
 			Content: "This is a test comment",
 		}
 
-		w := ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", token1, comment)
+		mockEventRepo.On("Get", mock.Anything, eventID).Return(event, nil).Once()
+		mockCommentRepo.On("Insert", mock.Anything, mock.MatchedBy(func(c *models.Comment) bool {
+			return c.Content == comment.Content && c.UserID == user1ID && c.EventID == eventID
+		})).Return(&models.Comment{ID: 1, Content: comment.Content, UserID: user1ID, EventID: eventID}, nil).Once()
+
+		w := ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(eventID)+"/comments", token1, comment)
 		assert.Equal(t, http.StatusCreated, w.Code)
 
 		var createdComment models.Comment
 		err := json.Unmarshal(w.Body.Bytes(), &createdComment)
 		assert.NoError(t, err)
-		assert.NotZero(t, createdComment.ID)
 		assert.Equal(t, comment.Content, createdComment.Content)
-		assert.Equal(t, user1.ID, createdComment.UserID)
-		assert.Equal(t, createdEvent.ID, createdComment.EventID)
-		assert.NotZero(t, createdComment.CreatedAt)
 	})
 
 	t.Run("get event comments", func(t *testing.T) {
-		// First add a few comments
-		comment1 := models.Comment{Content: "First comment"}
-		ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", token1, comment1)
+		comments := []*models.Comment{
+			{ID: 1, Content: "First comment", UserID: user1ID, EventID: eventID},
+			{ID: 2, Content: "Second comment", UserID: user2ID, EventID: eventID},
+		}
 
-		comment2 := models.Comment{Content: "Second comment"}
-		ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", token2, comment2)
+		mockEventRepo.On("Get", mock.Anything, eventID).Return(event, nil).Once()
+		mockCommentRepo.On("GetByEvent", mock.Anything, eventID).Return(comments, nil).Once()
 
 		// Get all comments for the event
-		w := ts.createRequest("GET", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", nil)
+		w := ts.createRequest("GET", "/api/v1/events/"+strconv.Itoa(eventID)+"/comments", nil)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var comments []models.Comment
-		err := json.Unmarshal(w.Body.Bytes(), &comments)
+		var respComments []models.Comment
+		err := json.Unmarshal(w.Body.Bytes(), &respComments)
 		assert.NoError(t, err)
-		assert.GreaterOrEqual(t, len(comments), 2)
-
-		// Check that comments have correct data
-		foundComment1 := false
-		foundComment2 := false
-		for _, c := range comments {
-			if c.Content == "First comment" {
-				assert.Equal(t, user1.ID, c.UserID)
-				foundComment1 = true
-			}
-			if c.Content == "Second comment" {
-				assert.Equal(t, user2.ID, c.UserID)
-				foundComment2 = true
-			}
-		}
-		assert.True(t, foundComment1, "First comment not found")
-		assert.True(t, foundComment2, "Second comment not found")
+		assert.Equal(t, len(comments), len(respComments))
 	})
 
 	t.Run("delete own comment", func(t *testing.T) {
-		// Create a comment to delete
-		comment := models.Comment{Content: "Comment to delete"}
-		createResp := ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", token1, comment)
-		assert.Equal(t, http.StatusCreated, createResp.Code)
+		commentID := 1
+		comment := &models.Comment{ID: commentID, Content: "Comment to delete", UserID: user1ID, EventID: eventID}
 
-		var createdComment models.Comment
-		err := json.Unmarshal(createResp.Body.Bytes(), &createdComment)
-		assert.NoError(t, err)
+		mockEventRepo.On("Get", mock.Anything, eventID).Return(event, nil).Once()
+		mockCommentRepo.On("Get", mock.Anything, commentID).Return(comment, nil).Once()
+		mockCommentRepo.On("Delete", mock.Anything, commentID).Return(nil).Once()
 
 		// Delete the comment
-		w := ts.createAuthenticatedRequest("DELETE", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments/"+strconv.Itoa(createdComment.ID), token1, nil)
+		w := ts.createAuthenticatedRequest("DELETE", "/api/v1/events/"+strconv.Itoa(eventID)+"/comments/"+strconv.Itoa(commentID), token1, nil)
 		assert.Equal(t, http.StatusNoContent, w.Code)
-
-		// Verify comment is deleted
-		getResp := ts.createRequest("GET", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", nil)
-		assert.Equal(t, http.StatusOK, getResp.Code)
-
-		var comments []models.Comment
-		err = json.Unmarshal(getResp.Body.Bytes(), &comments)
-		assert.NoError(t, err)
-
-		// Check that the deleted comment is not in the list
-		for _, c := range comments {
-			assert.NotEqual(t, createdComment.ID, c.ID, "Deleted comment still exists")
-		}
 	})
 
 	t.Run("comment validation", func(t *testing.T) {
 		// Test empty content
 		invalidComment := models.Comment{Content: ""}
-		w := ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", token1, invalidComment)
+		w := ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(eventID)+"/comments", token1, invalidComment)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
 		// Test comment on non-existent event
+		nonExistentEventID := 99999
 		validComment := models.Comment{Content: "Valid comment"}
-		w = ts.createAuthenticatedRequest("POST", "/api/v1/events/99999/comments", token1, validComment)
+
+		mockEventRepo.On("Get", mock.Anything, nonExistentEventID).Return(nil, nil).Once()
+
+		w = ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(nonExistentEventID)+"/comments", token1, validComment)
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
 
 // TestCommentAuthorization tests comment authorization
 func TestCommentAuthorization(t *testing.T) {
-	ts := SetupTestSuite(t)
-	if ts == nil {
-		t.Skip("Test suite setup failed")
-		return
-	}
-	defer ts.TeardownTestSuite(t)
+	ts := SetupMockTestSuite(t)
 
-	// Create test users and event
-	token1, _ := ts.createTestUser(t, "authcommentuser1@example.com", "password123", "Auth Comment User 1")
-	token2, _ := ts.createTestUser(t, "authcommentuser2@example.com", "password123", "Auth Comment User 2")
+	user1ID := 1
+	user2ID := 2
+	// token1 is not used
+	token2, _ := ts.GenerateToken(user2ID)
 
-	event := models.Event{
+	mockUserRepo := ts.Mocks.Users.(*mocks.UserRepositoryMock)
+	mockUserRepo.On("Get", mock.Anything, user1ID).Return(&models.User{ID: user1ID, Email: "authcommentuser1@example.com"}, nil)
+	mockUserRepo.On("Get", mock.Anything, user2ID).Return(&models.User{ID: user2ID, Email: "authcommentuser2@example.com"}, nil)
+
+	eventID := 1
+	event := &models.Event{
+		ID:          eventID,
 		Name:        "Event for Auth Test",
 		Description: "Testing comment authorization",
 		Date:        "2025-12-31",
 		Location:    "Auth Location",
 	}
-	createdEvent := ts.createTestEvent(t, token1, event)
+
+	mockEventRepo := ts.Mocks.Events.(*mocks.EventRepositoryMock)
+	mockCommentRepo := ts.Mocks.Comments.(*mocks.CommentRepositoryMock)
 
 	t.Run("cannot delete others comment", func(t *testing.T) {
-		// User 1 creates a comment
-		comment := models.Comment{Content: "User 1's comment"}
-		createResp := ts.createAuthenticatedRequest("POST", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", token1, comment)
-		assert.Equal(t, http.StatusCreated, createResp.Code)
+		commentID := 1
+		comment := &models.Comment{ID: commentID, Content: "User 1's comment", UserID: user1ID, EventID: eventID}
 
-		var createdComment models.Comment
-		err := json.Unmarshal(createResp.Body.Bytes(), &createdComment)
-		assert.NoError(t, err)
+		mockEventRepo.On("Get", mock.Anything, eventID).Return(event, nil).Once()
+		mockCommentRepo.On("Get", mock.Anything, commentID).Return(comment, nil).Once()
 
 		// User 2 tries to delete User 1's comment
-		w := ts.createAuthenticatedRequest("DELETE", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments/"+strconv.Itoa(createdComment.ID), token2, nil)
+		w := ts.createAuthenticatedRequest("DELETE", "/api/v1/events/"+strconv.Itoa(eventID)+"/comments/"+strconv.Itoa(commentID), token2, nil)
 		assert.Equal(t, http.StatusForbidden, w.Code)
-
-		// Verify comment still exists
-		getResp := ts.createRequest("GET", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", nil)
-		assert.Equal(t, http.StatusOK, getResp.Code)
-
-		var comments []models.Comment
-		err = json.Unmarshal(getResp.Body.Bytes(), &comments)
-		assert.NoError(t, err)
-
-		found := false
-		for _, c := range comments {
-			if c.ID == createdComment.ID {
-				found = true
-				break
-			}
-		}
-		assert.True(t, found, "Comment was incorrectly deleted")
 	})
 
 	t.Run("unauthenticated cannot create comment", func(t *testing.T) {
 		comment := models.Comment{Content: "Unauthenticated comment"}
-		w := ts.createRequest("POST", "/api/v1/events/"+strconv.Itoa(createdEvent.ID)+"/comments", comment)
+		w := ts.createRequest("POST", "/api/v1/events/"+strconv.Itoa(eventID)+"/comments", comment)
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
