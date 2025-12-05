@@ -62,6 +62,8 @@ func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo *reposito
 			SetupProtectedUserRoutes(protected, handler)
 			SetupProtectedProfileRoutes(protected, handler)
 			SetupProtectedProductRoutes(protected, handler)
+			SetupProtectedBasketRoutes(protected, handler)
+
 		}
 	}
 
