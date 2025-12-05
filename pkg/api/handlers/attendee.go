@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/helpers"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -85,7 +85,7 @@ func (h *Handler) AddAttendee(c *gin.Context) {
 	}
 
 	// Add attendee
-	attendee := &repository.Attendee{
+	attendee := &models.Attendee{
 		EventID: eventID,
 		UserID:  userID,
 	}

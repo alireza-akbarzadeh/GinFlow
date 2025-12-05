@@ -10,6 +10,7 @@ import (
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/handlers"
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/routers"
 	"github.com/alireza-akbarzadeh/ginflow/pkg/config"
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/driver/postgres"
@@ -50,7 +51,7 @@ func main() {
 	}
 
 	// Auto Migrate the schema
-	err = db.AutoMigrate(&repository.User{}, &repository.Event{}, &repository.Attendee{}, &repository.Category{}, &repository.Comment{})
+	err = db.AutoMigrate(&models.User{}, &models.Event{}, &models.Attendee{}, &models.Category{}, &models.Comment{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}

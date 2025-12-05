@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/helpers"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
@@ -26,8 +26,8 @@ type LoginRequest struct {
 
 // LoginResponse represents the login response
 type LoginResponse struct {
-	Token string           `json:"token"`
-	User  *repository.User `json:"user"`
+	Token string       `json:"token"`
+	User  *models.User `json:"user"`
 }
 
 // UpdatePasswordRequest represents the password update request payload
@@ -144,7 +144,7 @@ func (h *Handler) Register(c *gin.Context) {
 	}
 
 	// Create user
-	user := &repository.User{
+	user := &models.User{
 		Email:    req.Email,
 		Password: string(hashedPassword),
 		Name:     req.Name,

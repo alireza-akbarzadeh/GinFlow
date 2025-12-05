@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/helpers"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ import (
 // @Security     BearerAuth
 // @Router       /api/v1/events [post]
 func (h *Handler) CreateEvent(c *gin.Context) {
-	var event repository.Event
+	var event models.Event
 	if err := c.ShouldBindJSON(&event); err != nil {
 		helpers.RespondWithError(c, http.StatusBadRequest, err.Error())
 		return
@@ -142,7 +142,7 @@ func (h *Handler) UpdateEvent(c *gin.Context) {
 	}
 
 	// Parse updated event data
-	var updatedEvent repository.Event
+	var updatedEvent models.Event
 	if err := c.ShouldBindJSON(&updatedEvent); err != nil {
 		helpers.RespondWithError(c, http.StatusBadRequest, err.Error())
 		return

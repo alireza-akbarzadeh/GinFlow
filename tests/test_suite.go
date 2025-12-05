@@ -10,6 +10,7 @@ import (
 
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/handlers"
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/routers"
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -56,11 +57,11 @@ func SetupTestSuite(t *testing.T) *TestSuite {
 
 	// Auto-migrate all models
 	err = db.AutoMigrate(
-		&repository.User{},
-		&repository.Event{},
-		&repository.Attendee{},
-		&repository.Category{},
-		&repository.Comment{},
+		&models.User{},
+		&models.Event{},
+		&models.Attendee{},
+		&models.Category{},
+		&models.Comment{},
 	)
 	require.NoError(t, err)
 
@@ -118,7 +119,7 @@ func (ts *TestSuite) createRequest(method, path string, body interface{}) *httpt
 }
 
 // Helper function to register and login a test user
-func (ts *TestSuite) createTestUser(t *testing.T, email, password, name string) (string, *repository.User) {
+func (ts *TestSuite) createTestUser(t *testing.T, email, password, name string) (string, *models.User) {
 	// Try to register user (may fail if user already exists)
 	registerReq := handlers.RegisterRequest{
 		Email:    email,
@@ -144,7 +145,7 @@ func (ts *TestSuite) createTestUser(t *testing.T, email, password, name string) 
 	require.NoError(t, err)
 
 	// Get user data from login response
-	var user repository.User
+	var user models.User
 	user.ID = loginResp.User.ID
 	user.Email = loginResp.User.Email
 	user.Name = loginResp.User.Name
@@ -153,11 +154,11 @@ func (ts *TestSuite) createTestUser(t *testing.T, email, password, name string) 
 }
 
 // Helper function to create a test event
-func (ts *TestSuite) createTestEvent(t *testing.T, token string, event repository.Event) *repository.Event {
+func (ts *TestSuite) createTestEvent(t *testing.T, token string, event models.Event) *models.Event {
 	w := ts.createAuthenticatedRequest("POST", "/api/v1/events", token, event)
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	var createdEvent repository.Event
+	var createdEvent models.Event
 	err := json.Unmarshal(w.Body.Bytes(), &createdEvent)
 	require.NoError(t, err)
 

@@ -1,15 +1,9 @@
 package repository
 
 import (
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"gorm.io/gorm"
 )
-
-// Category represents an event category
-type Category struct {
-	ID          int    `json:"id" gorm:"primaryKey"`
-	Name        string `json:"name" binding:"required,min=3" gorm:"uniqueIndex;not null"`
-	Description string `json:"description"`
-}
 
 // CategoryRepository handles category database operations
 type CategoryRepository struct {
@@ -22,7 +16,7 @@ func NewCategoryRepository(db *gorm.DB) *CategoryRepository {
 }
 
 // Insert creates a new category
-func (r *CategoryRepository) Insert(category *Category) (*Category, error) {
+func (r *CategoryRepository) Insert(category *models.Category) (*models.Category, error) {
 	result := r.DB.Create(category)
 	if result.Error != nil {
 		return nil, result.Error
@@ -31,8 +25,8 @@ func (r *CategoryRepository) Insert(category *Category) (*Category, error) {
 }
 
 // GetAll retrieves all categories
-func (r *CategoryRepository) GetAll() ([]*Category, error) {
-	var categories []*Category
+func (r *CategoryRepository) GetAll() ([]*models.Category, error) {
+	var categories []*models.Category
 	result := r.DB.Find(&categories)
 	if result.Error != nil {
 		return nil, result.Error
@@ -41,8 +35,8 @@ func (r *CategoryRepository) GetAll() ([]*Category, error) {
 }
 
 // Get retrieves a category by ID
-func (r *CategoryRepository) Get(id int) (*Category, error) {
-	var category Category
+func (r *CategoryRepository) Get(id int) (*models.Category, error) {
+	var category models.Category
 	result := r.DB.First(&category, id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {

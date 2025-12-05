@@ -91,6 +91,13 @@ func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo *reposito
 			protected.GET("/users", handler.GetAllUsers)
 			protected.PUT("/users/:id", handler.UpdateUser)
 			protected.DELETE("/users/:id", handler.DeleteUser)
+			protected.GET("/profile")
+
+			//	order management
+			protected.GET("/orders")
+			protected.POST("/orders")
+			protected.DELETE("/orders/:id")
+			protected.PUT("/orders/:id")
 		}
 	}
 

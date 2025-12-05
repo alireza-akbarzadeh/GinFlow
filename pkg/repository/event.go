@@ -1,18 +1,9 @@
 package repository
 
 import (
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"gorm.io/gorm"
 )
-
-// Event represents an event in the system
-type Event struct {
-	ID          int    `json:"id" gorm:"primaryKey"`
-	OwnerID     int    `json:"ownerId" gorm:"not null"`
-	Name        string `json:"name" binding:"required,min=3" gorm:"not null"`
-	Description string `json:"description" binding:"required,min=10" gorm:"not null"`
-	Date        string `json:"date" binding:"required,datetime=2006-01-02" gorm:"not null"`
-	Location    string `json:"location" binding:"required,min=3" gorm:"not null"`
-}
 
 // EventRepository handles event database operations
 type EventRepository struct {
@@ -25,7 +16,7 @@ func NewEventRepository(db *gorm.DB) *EventRepository {
 }
 
 // Insert creates a new event in the database
-func (r *EventRepository) Insert(event *Event) (*Event, error) {
+func (r *EventRepository) Insert(event *models.Event) (*models.Event, error) {
 	result := r.DB.Create(event)
 	if result.Error != nil {
 		return nil, result.Error
@@ -34,8 +25,8 @@ func (r *EventRepository) Insert(event *Event) (*Event, error) {
 }
 
 // Get retrieves an event by ID
-func (r *EventRepository) Get(id int) (*Event, error) {
-	var event Event
+func (r *EventRepository) Get(id int) (*models.Event, error) {
+	var event models.Event
 	result := r.DB.First(&event, id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -47,8 +38,8 @@ func (r *EventRepository) Get(id int) (*Event, error) {
 }
 
 // GetAll retrieves all events
-func (r *EventRepository) GetAll() ([]*Event, error) {
-	var events []*Event
+func (r *EventRepository) GetAll() ([]*models.Event, error) {
+	var events []*models.Event
 	result := r.DB.Find(&events)
 	if result.Error != nil {
 		return nil, result.Error
@@ -57,13 +48,13 @@ func (r *EventRepository) GetAll() ([]*Event, error) {
 }
 
 // Update updates an existing event
-func (r *EventRepository) Update(event *Event) error {
+func (r *EventRepository) Update(event *models.Event) error {
 	result := r.DB.Save(event)
 	return result.Error
 }
 
 // Delete removes an event by ID
 func (r *EventRepository) Delete(id int) error {
-	result := r.DB.Delete(&Event{}, id)
+	result := r.DB.Delete(&models.Event{}, id)
 	return result.Error
 }

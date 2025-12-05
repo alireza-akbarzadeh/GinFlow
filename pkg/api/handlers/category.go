@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/helpers"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ import (
 // @Security     BearerAuth
 // @Router       /api/v1/categories [post]
 func (h *Handler) CreateCategory(c *gin.Context) {
-	var category repository.Category
+	var category models.Category
 	if err := c.ShouldBindJSON(&category); err != nil {
 		helpers.RespondWithError(c, http.StatusBadRequest, err.Error())
 		return

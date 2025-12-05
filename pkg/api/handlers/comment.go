@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/alireza-akbarzadeh/ginflow/pkg/api/helpers"
-	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,7 +43,7 @@ func (h *Handler) CreateComment(c *gin.Context) {
 		return
 	}
 
-	var comment repository.Comment
+	var comment models.Comment
 	if err := c.ShouldBindJSON(&comment); err != nil {
 		helpers.RespondWithError(c, http.StatusBadRequest, err.Error())
 		return

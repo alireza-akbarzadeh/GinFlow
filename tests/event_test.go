@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alireza-akbarzadeh/ginflow/pkg/repository"
+	models "github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +23,7 @@ func TestEventManagement(t *testing.T) {
 	token, user := ts.createTestUser(t, "eventuser@example.com", "password123", "Event User")
 
 	t.Run("create event", func(t *testing.T) {
-		event := repository.Event{
+		event := models.Event{
 			Name:        "Test Event",
 			Description: "This is a test event description",
 			Date:        "2025-12-31",
@@ -33,7 +33,7 @@ func TestEventManagement(t *testing.T) {
 		w := ts.createAuthenticatedRequest("POST", "/api/v1/events", token, event)
 		assert.Equal(t, http.StatusCreated, w.Code)
 
-		var createdEvent repository.Event
+		var createdEvent models.Event
 		err := json.Unmarshal(w.Body.Bytes(), &createdEvent)
 		assert.NoError(t, err)
 		assert.NotZero(t, createdEvent.ID)
@@ -47,7 +47,7 @@ func TestEventManagement(t *testing.T) {
 		w := ts.createRequest("GET", "/api/v1/events", nil)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var events []repository.Event
+		var events []models.Event
 		err := json.Unmarshal(w.Body.Bytes(), &events)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, events)
@@ -56,7 +56,7 @@ func TestEventManagement(t *testing.T) {
 
 	t.Run("get single event", func(t *testing.T) {
 		// First create an event to get its ID
-		event := repository.Event{
+		event := models.Event{
 			Name:        "Single Event",
 			Description: "Description for single event",
 			Date:        "2025-12-31",
@@ -68,7 +68,7 @@ func TestEventManagement(t *testing.T) {
 		w := ts.createRequest("GET", "/api/v1/events/"+strconv.Itoa(createdEvent.ID), nil)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var retrievedEvent repository.Event
+		var retrievedEvent models.Event
 		err := json.Unmarshal(w.Body.Bytes(), &retrievedEvent)
 		assert.NoError(t, err)
 		assert.Equal(t, createdEvent.ID, retrievedEvent.ID)
@@ -77,7 +77,7 @@ func TestEventManagement(t *testing.T) {
 
 	t.Run("update event", func(t *testing.T) {
 		// Create an event first
-		event := repository.Event{
+		event := models.Event{
 			Name:        "Original Event",
 			Description: "Original description",
 			Date:        "2025-12-31",
@@ -86,7 +86,7 @@ func TestEventManagement(t *testing.T) {
 		createdEvent := ts.createTestEvent(t, token, event)
 
 		// Update the event
-		updatedEvent := repository.Event{
+		updatedEvent := models.Event{
 			Name:        "Updated Event",
 			Description: "Updated description",
 			Date:        "2025-12-31",
@@ -96,7 +96,7 @@ func TestEventManagement(t *testing.T) {
 		w := ts.createAuthenticatedRequest("PUT", "/api/v1/events/"+strconv.Itoa(createdEvent.ID), token, updatedEvent)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var result repository.Event
+		var result models.Event
 		err := json.Unmarshal(w.Body.Bytes(), &result)
 		assert.NoError(t, err)
 		assert.Equal(t, "Updated Event", result.Name)
@@ -106,7 +106,7 @@ func TestEventManagement(t *testing.T) {
 
 	t.Run("delete event", func(t *testing.T) {
 		// Create an event first
-		event := repository.Event{
+		event := models.Event{
 			Name:        "Event to Delete",
 			Description: "This event will be deleted",
 			Date:        "2025-12-31",
@@ -138,7 +138,7 @@ func TestEventAuthorization(t *testing.T) {
 	token2, _ := ts.createTestUser(t, "user2@example.com", "password123", "User Two")
 
 	// User 1 creates an event
-	event := repository.Event{
+	event := models.Event{
 		Name:        "User1 Event",
 		Description: "Event created by user 1",
 		Date:        "2025-12-31",
@@ -147,7 +147,7 @@ func TestEventAuthorization(t *testing.T) {
 	createdEvent := ts.createTestEvent(t, token1, event)
 
 	t.Run("user cannot update another user's event", func(t *testing.T) {
-		updatedEvent := repository.Event{
+		updatedEvent := models.Event{
 			Name:        "Hacked Event",
 			Description: "This should not work",
 			Date:        "2025-12-31",
@@ -164,7 +164,7 @@ func TestEventAuthorization(t *testing.T) {
 	})
 
 	t.Run("owner can update their event", func(t *testing.T) {
-		updatedEvent := repository.Event{
+		updatedEvent := models.Event{
 			Name:        "Updated by Owner",
 			Description: "Updated description by owner",
 			Date:        "2025-12-31",
@@ -193,7 +193,7 @@ func TestEventValidation(t *testing.T) {
 	})
 
 	t.Run("name too short", func(t *testing.T) {
-		event := repository.Event{
+		event := models.Event{
 			Name:        "A",
 			Description: "Valid description",
 			Date:        "2025-12-31",
@@ -204,7 +204,7 @@ func TestEventValidation(t *testing.T) {
 	})
 
 	t.Run("description too short", func(t *testing.T) {
-		event := repository.Event{
+		event := models.Event{
 			Name:        "Valid Name",
 			Description: "Short",
 			Date:        "2025-12-31",
@@ -215,7 +215,7 @@ func TestEventValidation(t *testing.T) {
 	})
 
 	t.Run("invalid date format", func(t *testing.T) {
-		event := repository.Event{
+		event := models.Event{
 			Name:        "Valid Name",
 			Description: "Valid description that is long enough",
 			Date:        "invalid-date",
@@ -226,7 +226,7 @@ func TestEventValidation(t *testing.T) {
 	})
 
 	t.Run("location too short", func(t *testing.T) {
-		event := repository.Event{
+		event := models.Event{
 			Name:        "Valid Name",
 			Description: "Valid description that is long enough",
 			Date:        "2025-12-31",

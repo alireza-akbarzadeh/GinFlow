@@ -1,23 +1,9 @@
 package repository
 
 import (
-	"time"
-
+	"github.com/alireza-akbarzadeh/ginflow/pkg/models"
 	"gorm.io/gorm"
 )
-
-// Comment represents a comment on an event
-type Comment struct {
-	ID        int       `json:"id" gorm:"primaryKey"`
-	UserID    int       `json:"userId" gorm:"not null"`
-	EventID   int       `json:"eventId" gorm:"not null"`
-	Content   string    `json:"content" binding:"required,min=1" gorm:"not null"`
-	CreatedAt time.Time `json:"createdAt"`
-
-	// Associations (optional, for preloading if needed)
-	User  User  `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	Event Event `json:"-" gorm:"foreignKey:EventID"`
-}
 
 // CommentRepository handles comment database operations
 type CommentRepository struct {
@@ -30,7 +16,7 @@ func NewCommentRepository(db *gorm.DB) *CommentRepository {
 }
 
 // Insert creates a new comment
-func (r *CommentRepository) Insert(comment *Comment) (*Comment, error) {
+func (r *CommentRepository) Insert(comment *models.Comment) (*models.Comment, error) {
 	result := r.DB.Create(comment)
 	if result.Error != nil {
 		return nil, result.Error
@@ -41,8 +27,8 @@ func (r *CommentRepository) Insert(comment *Comment) (*Comment, error) {
 }
 
 // GetByEvent retrieves all comments for a specific event
-func (r *CommentRepository) GetByEvent(eventID int) ([]*Comment, error) {
-	var comments []*Comment
+func (r *CommentRepository) GetByEvent(eventID int) ([]*models.Comment, error) {
+	var comments []*models.Comment
 	result := r.DB.Where("event_id = ?", eventID).Preload("User").Order("created_at desc").Find(&comments)
 	if result.Error != nil {
 		return nil, result.Error
@@ -52,13 +38,13 @@ func (r *CommentRepository) GetByEvent(eventID int) ([]*Comment, error) {
 
 // Delete removes a comment
 func (r *CommentRepository) Delete(id int) error {
-	result := r.DB.Delete(&Comment{}, id)
+	result := r.DB.Delete(&models.Comment{}, id)
 	return result.Error
 }
 
 // Get retrieves a comment by ID
-func (r *CommentRepository) Get(id int) (*Comment, error) {
-	var comment Comment
+func (r *CommentRepository) Get(id int) (*models.Comment, error) {
+	var comment models.Comment
 	result := r.DB.First(&comment, id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
