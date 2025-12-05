@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,6 +34,10 @@ import (
 // @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
+	// 0. Setup Structured Logger
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	// 1. Load Configuration
 	port := config.GetEnvInt("PORT", 8080)
 	jwtSecret := config.GetEnvString("JWT_SECRET", "some-secret-123456")
@@ -42,12 +46,14 @@ func main() {
 	// 2. Initialize Database
 	db, err := database.Connect(dbUrl)
 	if err != nil {
-		log.Fatalf("Database connection failed: %v", err)
+		slog.Error("Database connection failed", "error", err)
+		os.Exit(1)
 	}
 
 	// 3. Run Migrations
 	if err := database.Migrate(db); err != nil {
-		log.Fatalf("Migration failed: %v", err)
+		slog.Error("Migration failed", "error", err)
+		os.Exit(1)
 	}
 
 	// 4. Initialize Dependencies
@@ -66,12 +72,13 @@ func main() {
 
 	// 6. Start Server in a Goroutine
 	go func() {
-		log.Printf("🚀 Server starting on port %d", port)
-		log.Printf("📚 Swagger UI:   http://localhost:%d/swagger/index.html", port)
-		log.Printf("🏥 Health Check: http://localhost:%d/health", port)
+		slog.Info("🚀 Server starting", "port", port)
+		slog.Info("📚 Swagger UI", "url", fmt.Sprintf("http://localhost:%d/swagger/index.html", port))
+		slog.Info("🏥 Health Check", "url", fmt.Sprintf("http://localhost:%d/health", port))
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+			slog.Error("Failed to start server", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -79,14 +86,15 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server...")
+	slog.Info("Shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		slog.Error("Server forced to shutdown", "error", err)
+		os.Exit(1)
 	}
 
-	log.Println("Server exiting")
+	slog.Info("Server exiting")
 }

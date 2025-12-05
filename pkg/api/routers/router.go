@@ -16,11 +16,21 @@ import (
 
 // SetupRouter configures and returns the main router
 func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo *repository.UserRepository) *gin.Engine {
-	router := gin.Default()
+	// Use gin.New() instead of Default() to use custom logger
+	router := gin.New()
+
+	// Add Recovery middleware to recover from panics
+	router.Use(gin.Recovery())
+
+	// Add Structured Logger middleware
+	router.Use(middleware.Logger())
 
 	// Apply rate limiting middleware globally
 	// 20 requests per second with a burst of 50
 	router.Use(middleware.RateLimitMiddleware(rate.Limit(constants.DEFAULT_RATE_LIMIT), constants.DEFAULT_RATE_BURST))
+
+	// Apply security headers middleware
+	router.Use(middleware.SecurityHeaders())
 
 	router.SetHTMLTemplate(template.Must(template.ParseFS(web.Templates, "components/*.html", "pages/*.html")))
 
