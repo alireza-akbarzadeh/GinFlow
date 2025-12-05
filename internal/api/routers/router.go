@@ -5,8 +5,8 @@ import (
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/handlers"
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/middleware"
-	"github.com/alireza-akbarzadeh/ginflow/internal/repository"
 	"github.com/alireza-akbarzadeh/ginflow/internal/constants"
+	"github.com/alireza-akbarzadeh/ginflow/internal/repository"
 	"github.com/alireza-akbarzadeh/ginflow/internal/web"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -28,6 +28,9 @@ func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo *reposito
 	// Apply rate limiting middleware globally
 	// 20 requests per second with a burst of 50
 	router.Use(middleware.RateLimitMiddleware(rate.Limit(constants.DEFAULT_RATE_LIMIT), constants.DEFAULT_RATE_BURST))
+
+	// Apply CORS middleware to allow requests from frontend
+	router.Use(middleware.CORS([]string{"*"}))
 
 	// Apply security headers middleware
 	router.Use(middleware.SecurityHeaders())
