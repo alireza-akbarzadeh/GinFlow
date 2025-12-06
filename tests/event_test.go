@@ -52,10 +52,10 @@ func TestEventManagement(t *testing.T) {
 		events := []*models.Event{
 			{ID: 1, Name: "Event 1", OwnerID: userID},
 		}
-		result := &query.AdvancedPaginatedResult{
+		result := &query.PaginatedList{
 			Success: true,
 			Data:    events,
-			Pagination: &query.AdvancedPaginationResponse{
+			Pagination: &query.PageInfo{
 				Page:        1,
 				PageSize:    20,
 				TotalItems:  1,
@@ -65,7 +65,7 @@ func TestEventManagement(t *testing.T) {
 				Count:       1,
 			},
 		}
-		mockEventRepo.On("ListWithAdvancedPagination", mock.Anything, mock.AnythingOfType("*query.AdvancedPaginationRequest")).Return(events, result, nil).Once()
+		mockEventRepo.On("ListWithAdvancedPagination", mock.Anything, mock.AnythingOfType("*query.QueryParams")).Return(events, result, nil).Once()
 
 		w := ts.createRequest("GET", "/api/v1/events", nil)
 		assert.Equal(t, http.StatusOK, w.Code)

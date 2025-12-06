@@ -74,7 +74,7 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 // @Param        price[gte]  query     number  false  "Filter by minimum price"
 // @Param        price[lte]  query     number  false  "Filter by maximum price"
 // @Param        user_id[eq] query     int     false  "Filter by user ID"
-// @Success      200         {object}  query.AdvancedPaginatedResult{data=[]models.Product}
+// @Success      200         {object}  query.PaginatedList{data=[]models.Product}
 // @Failure      500         {object}  helpers.ErrorResponse
 // @Router       /api/v1/products [get]
 func (h *Handler) GetAllProducts(c *gin.Context) {

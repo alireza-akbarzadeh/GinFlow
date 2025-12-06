@@ -101,7 +101,7 @@ func (h *Handler) GetEvent(c *gin.Context) {
 // @Param        name[like]  query     string  false  "Filter by name (partial match)"
 // @Param        location[eq] query    string  false  "Filter by location"
 // @Param        owner_id[eq] query    int     false  "Filter by owner ID"
-// @Success      200  {object}  query.AdvancedPaginatedResult{data=[]models.Event}
+// @Success      200  {object}  query.PaginatedList{data=[]models.Event}
 // @Failure      400  {object}  helpers.ErrorResponse
 // @Failure      500  {object}  helpers.ErrorResponse
 // @Router       /api/v1/events [get]

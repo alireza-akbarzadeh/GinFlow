@@ -14,6 +14,6 @@ type EventRepositoryInterface interface {
 	Update(ctx context.Context, event *models.Event) error
 	Delete(ctx context.Context, id int) error
 	ListWithPagination(ctx context.Context, req *query.PaginationRequest) ([]*models.Event, *query.PaginationResponse, error)
-	ListWithAdvancedPagination(ctx context.Context, req *query.AdvancedPaginationRequest) ([]*models.Event, *query.AdvancedPaginatedResult, error)
+	ListWithAdvancedPagination(ctx context.Context, req *query.QueryParams) ([]*models.Event, *query.PaginatedList, error)
 	GetByOwnerID(ctx context.Context, ownerID int) ([]*models.Event, error)
 }

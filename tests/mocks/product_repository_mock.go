@@ -28,7 +28,7 @@ func (m *ProductRepositoryMock) GetAll(ctx context.Context, page, limit int, sea
 	return args.Get(0).([]models.Product), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *ProductRepositoryMock) ListWithAdvancedPagination(ctx context.Context, req *query.AdvancedPaginationRequest) ([]models.Product, *query.AdvancedPaginatedResult, error) {
+func (m *ProductRepositoryMock) ListWithAdvancedPagination(ctx context.Context, req *query.QueryParams) ([]models.Product, *query.PaginatedList, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, nil, args.Error(2)
@@ -36,7 +36,7 @@ func (m *ProductRepositoryMock) ListWithAdvancedPagination(ctx context.Context, 
 	if args.Get(1) == nil {
 		return args.Get(0).([]models.Product), nil, args.Error(2)
 	}
-	return args.Get(0).([]models.Product), args.Get(1).(*query.AdvancedPaginatedResult), args.Error(2)
+	return args.Get(0).([]models.Product), args.Get(1).(*query.PaginatedList), args.Error(2)
 }
 
 func (m *ProductRepositoryMock) Get(ctx context.Context, id int) (*models.Product, error) {
