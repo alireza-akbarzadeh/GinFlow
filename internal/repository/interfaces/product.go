@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 )
 
 type ProductRepositoryInterface interface {
 	Insert(ctx context.Context, product *models.Product) (*models.Product, error)
 	GetAll(ctx context.Context, page, limit int, search string, categoryID int) ([]models.Product, int64, error)
-	ListWithAdvancedPagination(ctx context.Context, req *pagination.AdvancedPaginationRequest) ([]models.Product, *pagination.AdvancedPaginatedResult, error)
+	ListWithAdvancedPagination(ctx context.Context, req *query.AdvancedPaginationRequest) ([]models.Product, *query.AdvancedPaginatedResult, error)
 	Get(ctx context.Context, id int) (*models.Product, error)
 	GetBySlug(ctx context.Context, slug string) (*models.Product, error)
 	Update(ctx context.Context, product *models.Product) error

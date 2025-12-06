@@ -1,4 +1,4 @@
-package pagination
+package query
 
 import (
 	"fmt"
@@ -8,12 +8,13 @@ import (
 )
 
 // ===========================================
-// PAGINATION BUILDER
+// QUERY BUILDER
 // ===========================================
 
-// PaginationBuilder helps build pagination queries with a fluent API
-type PaginationBuilder struct {
-	request        *AdvancedPaginationRequest
+// QueryBuilder helps build database queries with a fluent API
+// Supports pagination, filtering, sorting, and search
+type QueryBuilder struct {
+	request        *QueryParams
 	db             *gorm.DB
 	allowedFilters map[string]bool
 	allowedSorts   map[string]bool
@@ -21,9 +22,9 @@ type PaginationBuilder struct {
 	searchColumns  []string
 }
 
-// NewPaginationBuilder creates a new pagination builder
-func NewPaginationBuilder(db *gorm.DB) *PaginationBuilder {
-	return &PaginationBuilder{
+// NewQueryBuilder creates a new query builder
+func NewQueryBuilder(db *gorm.DB) *QueryBuilder {
+	return &QueryBuilder{
 		db:             db,
 		allowedFilters: make(map[string]bool),
 		allowedSorts:   make(map[string]bool),
@@ -31,42 +32,47 @@ func NewPaginationBuilder(db *gorm.DB) *PaginationBuilder {
 	}
 }
 
+// Alias for backward compatibility
+func NewPaginationBuilder(db *gorm.DB) *QueryBuilder {
+	return NewQueryBuilder(db)
+}
+
 // ===========================================
 // BUILDER CONFIGURATION METHODS
 // ===========================================
 
-// WithRequest sets the pagination request
-func (pb *PaginationBuilder) WithRequest(req *AdvancedPaginationRequest) *PaginationBuilder {
-	pb.request = req
-	return pb
+// WithRequest sets the query params
+func (qb *QueryBuilder) WithRequest(req *QueryParams) *QueryBuilder {
+	qb.request = req
+	return qb
 }
 
 // AllowFilters sets allowed filter fields (for security)
-func (pb *PaginationBuilder) AllowFilters(fields ...string) *PaginationBuilder {
+func (qb *QueryBuilder) AllowFilters(fields ...string) *QueryBuilder {
 	for _, f := range fields {
-		pb.allowedFilters[f] = true
+		qb.allowedFilters[f] = true
 	}
-	return pb
+	return qb
 }
 
 // AllowSorts sets allowed sort fields (for security)
-func (pb *PaginationBuilder) AllowSorts(fields ...string) *PaginationBuilder {
+func (qb *QueryBuilder) AllowSorts(fields ...string) *QueryBuilder {
 	for _, f := range fields {
-		pb.allowedSorts[f] = true
+		qb.allowedSorts[f] = true
 	}
-	return pb
+	return qb
 }
 
 // DefaultSort sets the default sort order when no sort is specified
-func (pb *PaginationBuilder) DefaultSort(field string, direction SortDirection) *PaginationBuilder {
-	pb.defaultSort = []SortField{{Field: field, Direction: direction}}
-	return pb
+func (qb *QueryBuilder) DefaultSort(field string, direction SortDirection) *QueryBuilder {
+	qb.defaultSort = []SortField{{Field: field, Direction: direction}}
+	return qb
 }
 
 // SearchColumns sets the columns to search in
-func (pb *PaginationBuilder) SearchColumns(columns ...string) *PaginationBuilder {
-	pb.searchColumns = columns
-	return pb
+func (qb *QueryBuilder) SearchColumns(columns ...string) *QueryBuilder {
+	qb.searchColumns = columns
+	return qb
 }
 
 // ===========================================
@@ -74,39 +80,39 @@ func (pb *PaginationBuilder) SearchColumns(columns ...string) *PaginationBuilder
 // ===========================================
 
 // Build applies pagination, filtering, and sorting to the query
-func (pb *PaginationBuilder) Build() *gorm.DB {
-	pb.ensureRequest()
+func (qb *QueryBuilder) Build() *gorm.DB {
+	qb.ensureRequest()
 
-	query := pb.db
-	query = pb.applyFilters(query)
-	query = pb.applySearch(query)
-	query = pb.applySorting(query)
-	query = pb.applyPagination(query)
+	query := qb.db
+	query = qb.applyFilters(query)
+	query = qb.applySearch(query)
+	query = qb.applySorting(query)
+	query = qb.applyPagination(query)
 
 	return query
 }
 
 // BuildWithCount applies pagination and returns both query and total count
-func (pb *PaginationBuilder) BuildWithCount(model interface{}) (*gorm.DB, int64) {
-	pb.ensureRequest()
+func (qb *QueryBuilder) BuildWithCount(model interface{}) (*gorm.DB, int64) {
+	qb.ensureRequest()
 
 	var total int64
 
 	// Count query (without pagination)
-	countQuery := pb.db.Model(model)
-	countQuery = pb.applyFilters(countQuery)
-	countQuery = pb.applySearch(countQuery)
+	countQuery := qb.db.Model(model)
+	countQuery = qb.applyFilters(countQuery)
+	countQuery = qb.applySearch(countQuery)
 	countQuery.Count(&total)
 
 	// Main query with pagination
-	query := pb.Build()
+	query := qb.Build()
 
 	return query, total
 }
 
-func (pb *PaginationBuilder) ensureRequest() {
-	if pb.request == nil {
-		pb.request = NewAdvancedPaginationRequest()
+func (qb *QueryBuilder) ensureRequest() {
+	if qb.request == nil {
+		qb.request = NewQueryParams()
 	}
 }
 
@@ -114,60 +120,60 @@ func (pb *PaginationBuilder) ensureRequest() {
 // FILTER APPLICATION
 // ===========================================
 
-func (pb *PaginationBuilder) applyFilters(query *gorm.DB) *gorm.DB {
-	for _, filter := range pb.request.Filters {
-		if pb.isFilterAllowed(filter.Field) {
+func (qb *QueryBuilder) applyFilters(query *gorm.DB) *gorm.DB {
+	for _, filter := range qb.request.Filters {
+		if qb.isFilterAllowed(filter.Field) {
 			query = ApplyFilter(query, filter)
 		}
 	}
 	return query
 }
 
-func (pb *PaginationBuilder) isFilterAllowed(field string) bool {
+func (qb *QueryBuilder) isFilterAllowed(field string) bool {
 	// If no allowed filters specified, allow all
-	if len(pb.allowedFilters) == 0 {
+	if len(qb.allowedFilters) == 0 {
 		return true
 	}
-	return pb.allowedFilters[field]
+	return qb.allowedFilters[field]
 }
 
 // ===========================================
 // SEARCH APPLICATION
 // ===========================================
 
-func (pb *PaginationBuilder) applySearch(query *gorm.DB) *gorm.DB {
-	if pb.request.Search == "" {
+func (qb *QueryBuilder) applySearch(query *gorm.DB) *gorm.DB {
+	if qb.request.Search == "" {
 		return query
 	}
 
-	searchFields := pb.getSearchFields()
+	searchFields := qb.getSearchFields()
 	if len(searchFields) == 0 {
 		return query
 	}
 
-	return ApplySearch(query, pb.request.Search, searchFields...)
+	return ApplySearch(query, qb.request.Search, searchFields...)
 }
 
-func (pb *PaginationBuilder) getSearchFields() []string {
+func (qb *QueryBuilder) getSearchFields() []string {
 	// Use request search fields if provided, otherwise use builder's
-	if len(pb.request.SearchFields) > 0 {
-		return pb.request.SearchFields
+	if len(qb.request.SearchFields) > 0 {
+		return qb.request.SearchFields
 	}
-	return pb.searchColumns
+	return qb.searchColumns
 }
 
 // ===========================================
 // SORT APPLICATION
 // ===========================================
 
-func (pb *PaginationBuilder) applySorting(query *gorm.DB) *gorm.DB {
-	sorts := pb.request.Sort
+func (qb *QueryBuilder) applySorting(query *gorm.DB) *gorm.DB {
+	sorts := qb.request.Sort
 	if len(sorts) == 0 {
-		sorts = pb.defaultSort
+		sorts = qb.defaultSort
 	}
 
 	for _, sort := range sorts {
-		if pb.isSortAllowed(sort.Field) {
+		if qb.isSortAllowed(sort.Field) {
 			query = ApplySortField(query, sort)
 		}
 	}
@@ -175,30 +181,30 @@ func (pb *PaginationBuilder) applySorting(query *gorm.DB) *gorm.DB {
 	return query
 }
 
-func (pb *PaginationBuilder) isSortAllowed(field string) bool {
+func (qb *QueryBuilder) isSortAllowed(field string) bool {
 	// If no allowed sorts specified, allow all
-	if len(pb.allowedSorts) == 0 {
+	if len(qb.allowedSorts) == 0 {
 		return true
 	}
-	return pb.allowedSorts[field]
+	return qb.allowedSorts[field]
 }
 
 // ===========================================
 // PAGINATION APPLICATION
 // ===========================================
 
-func (pb *PaginationBuilder) applyPagination(query *gorm.DB) *gorm.DB {
-	limit := pb.getLimit()
+func (qb *QueryBuilder) applyPagination(query *gorm.DB) *gorm.DB {
+	limit := qb.getLimit()
 
-	if pb.request.Type == CursorPagination {
-		return pb.applyCursorPagination(query, limit)
+	if qb.request.Type == CursorPagination {
+		return qb.applyCursorPagination(query, limit)
 	}
 
-	return pb.applyOffsetPagination(query, limit)
+	return qb.applyOffsetPagination(query, limit)
 }
 
-func (pb *PaginationBuilder) getLimit() int {
-	limit := pb.request.PageSize
+func (qb *QueryBuilder) getLimit() int {
+	limit := qb.request.PageSize
 	if limit <= 0 {
 		limit = 20
 	}
@@ -208,9 +214,9 @@ func (pb *PaginationBuilder) getLimit() int {
 	return limit
 }
 
-func (pb *PaginationBuilder) applyCursorPagination(query *gorm.DB, limit int) *gorm.DB {
-	if pb.request.Cursor != "" {
-		cursor, err := DecodeCursor(pb.request.Cursor)
+func (qb *QueryBuilder) applyCursorPagination(query *gorm.DB, limit int) *gorm.DB {
+	if qb.request.Cursor != "" {
+		cursor, err := DecodeCursor(qb.request.Cursor)
 		if err == nil {
 			query = query.Where("id > ?", cursor.ID)
 		}
@@ -218,8 +224,8 @@ func (pb *PaginationBuilder) applyCursorPagination(query *gorm.DB, limit int) *g
 	return query.Limit(limit)
 }
 
-func (pb *PaginationBuilder) applyOffsetPagination(query *gorm.DB, limit int) *gorm.DB {
-	page := pb.request.Page
+func (qb *QueryBuilder) applyOffsetPagination(query *gorm.DB, limit int) *gorm.DB {
+	page := qb.request.Page
 	if page <= 0 {
 		page = 1
 	}

@@ -7,7 +7,7 @@ import (
 	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
 	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"github.com/gin-gonic/gin"
 )
 
@@ -101,7 +101,7 @@ func (h *Handler) GetEvent(c *gin.Context) {
 // @Param        name[like]  query     string  false  "Filter by name (partial match)"
 // @Param        location[eq] query    string  false  "Filter by location"
 // @Param        owner_id[eq] query    int     false  "Filter by owner ID"
-// @Success      200  {object}  pagination.AdvancedPaginatedResult{data=[]models.Event}
+// @Success      200  {object}  query.AdvancedPaginatedResult{data=[]models.Event}
 // @Failure      400  {object}  helpers.ErrorResponse
 // @Failure      500  {object}  helpers.ErrorResponse
 // @Router       /api/v1/events [get]
@@ -110,7 +110,7 @@ func (h *Handler) GetAllEvents(c *gin.Context) {
 	logging.Debug(ctx, "handling GetAllEvents request with advanced pagination")
 
 	// Parse advanced pagination parameters from context
-	req := pagination.ParseFromContext(c)
+	req := query.ParseFromContext(c)
 
 	events, result, err := h.Repos.Events.ListWithAdvancedPagination(ctx, req)
 	if helpers.HandleError(c, err, "Failed to retrieve events") {

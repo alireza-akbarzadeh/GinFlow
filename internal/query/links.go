@@ -1,4 +1,4 @@
-package pagination
+package query
 
 import (
 	"net/url"
@@ -10,7 +10,7 @@ import (
 // ===========================================
 
 // buildLinks generates HATEOAS navigation links
-func buildLinks(req *AdvancedPaginationRequest, resp *AdvancedPaginationResponse) PaginationLinks {
+func buildLinks(req *QueryParams, resp *PageInfo) PaginationLinks {
 	links := PaginationLinks{}
 
 	if req.BaseURL == "" {
@@ -28,14 +28,14 @@ func buildLinks(req *AdvancedPaginationRequest, resp *AdvancedPaginationResponse
 
 // linkBuilder helps construct pagination links
 type linkBuilder struct {
-	req *AdvancedPaginationRequest
+	req *QueryParams
 }
 
-func newLinkBuilder(req *AdvancedPaginationRequest) *linkBuilder {
+func newLinkBuilder(req *QueryParams) *linkBuilder {
 	return &linkBuilder{req: req}
 }
 
-func (lb *linkBuilder) buildCursorLinks(resp *AdvancedPaginationResponse) PaginationLinks {
+func (lb *linkBuilder) buildCursorLinks(resp *PageInfo) PaginationLinks {
 	links := PaginationLinks{
 		Self: lb.buildURL(map[string]string{"cursor": lb.req.Cursor}),
 	}
@@ -47,7 +47,7 @@ func (lb *linkBuilder) buildCursorLinks(resp *AdvancedPaginationResponse) Pagina
 	return links
 }
 
-func (lb *linkBuilder) buildOffsetLinks(resp *AdvancedPaginationResponse) PaginationLinks {
+func (lb *linkBuilder) buildOffsetLinks(resp *PageInfo) PaginationLinks {
 	links := PaginationLinks{
 		Self:  lb.buildURL(map[string]string{"page": strconv.Itoa(lb.req.Page)}),
 		First: lb.buildURL(map[string]string{"page": "1"}),

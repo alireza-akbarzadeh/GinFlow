@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -46,7 +46,7 @@ func (m *EventRepositoryMock) Delete(ctx context.Context, id int) error {
 	return args.Error(0)
 }
 
-func (m *EventRepositoryMock) ListWithPagination(ctx context.Context, req *pagination.PaginationRequest) ([]*models.Event, *pagination.PaginationResponse, error) {
+func (m *EventRepositoryMock) ListWithPagination(ctx context.Context, req *query.PaginationRequest) ([]*models.Event, *query.PaginationResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, nil, args.Error(2)
@@ -54,10 +54,10 @@ func (m *EventRepositoryMock) ListWithPagination(ctx context.Context, req *pagin
 	if args.Get(1) == nil {
 		return args.Get(0).([]*models.Event), nil, args.Error(2)
 	}
-	return args.Get(0).([]*models.Event), args.Get(1).(*pagination.PaginationResponse), args.Error(2)
+	return args.Get(0).([]*models.Event), args.Get(1).(*query.PaginationResponse), args.Error(2)
 }
 
-func (m *EventRepositoryMock) ListWithAdvancedPagination(ctx context.Context, req *pagination.AdvancedPaginationRequest) ([]*models.Event, *pagination.AdvancedPaginatedResult, error) {
+func (m *EventRepositoryMock) ListWithAdvancedPagination(ctx context.Context, req *query.AdvancedPaginationRequest) ([]*models.Event, *query.AdvancedPaginatedResult, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, nil, args.Error(2)
@@ -65,7 +65,7 @@ func (m *EventRepositoryMock) ListWithAdvancedPagination(ctx context.Context, re
 	if args.Get(1) == nil {
 		return args.Get(0).([]*models.Event), nil, args.Error(2)
 	}
-	return args.Get(0).([]*models.Event), args.Get(1).(*pagination.AdvancedPaginatedResult), args.Error(2)
+	return args.Get(0).([]*models.Event), args.Get(1).(*query.AdvancedPaginatedResult), args.Error(2)
 }
 
 func (m *EventRepositoryMock) GetByOwnerID(ctx context.Context, ownerID int) ([]*models.Event, error) {

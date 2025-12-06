@@ -7,7 +7,7 @@ import (
 	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
 	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"gorm.io/gorm"
 )
 
@@ -103,7 +103,7 @@ func (r *EventRepository) Delete(ctx context.Context, id int) error {
 }
 
 // ListWithPagination retrieves events with pagination
-func (r *EventRepository) ListWithPagination(ctx context.Context, req *pagination.PaginationRequest) ([]*models.Event, *pagination.PaginationResponse, error) {
+func (r *EventRepository) ListWithPagination(ctx context.Context, req *query.PaginationRequest) ([]*models.Event, *query.PaginationResponse, error) {
 	logging.Debug(ctx, "retrieving events with pagination", "page", req.Page, "page_size", req.PageSize)
 
 	var events []*models.Event
@@ -127,7 +127,7 @@ func (r *EventRepository) ListWithPagination(ctx context.Context, req *paginatio
 
 	// Calculate pagination response
 	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
-	paginationResp := &pagination.PaginationResponse{
+	paginationResp := &query.PaginationResponse{
 		Page:       req.Page,
 		PageSize:   req.PageSize,
 		TotalItems: total,
@@ -141,7 +141,7 @@ func (r *EventRepository) ListWithPagination(ctx context.Context, req *paginatio
 }
 
 // ListWithAdvancedPagination retrieves events with advanced pagination, filtering, sorting, and search
-func (r *EventRepository) ListWithAdvancedPagination(ctx context.Context, req *pagination.AdvancedPaginationRequest) ([]*models.Event, *pagination.AdvancedPaginatedResult, error) {
+func (r *EventRepository) ListWithAdvancedPagination(ctx context.Context, req *query.QueryParams) ([]*models.Event, *query.PaginatedList, error) {
 	logging.Debug(ctx, "retrieving events with advanced pagination",
 		"page", req.Page,
 		"page_size", req.PageSize,
@@ -153,29 +153,29 @@ func (r *EventRepository) ListWithAdvancedPagination(ctx context.Context, req *p
 	var total int64
 
 	// Build pagination query
-	builder := pagination.NewPaginationBuilder(r.DB.WithContext(ctx).Model(&models.Event{})).
+	builder := query.NewQueryBuilder(r.DB.WithContext(ctx).Model(&models.Event{})).
 		WithRequest(req).
 		AllowFilters("name", "location", "owner_id", "start_date", "end_date", "created_at", "status").
 		AllowSorts("name", "start_date", "end_date", "created_at", "updated_at").
 		SearchColumns("name", "description", "location").
-		DefaultSort("created_at", pagination.SortDesc)
+		DefaultSort("created_at", query.SortDesc)
 
 	// Get count if needed
 	if req.IncludeTotal {
 		countQuery := r.DB.WithContext(ctx).Model(&models.Event{})
 		// Apply filters and search for count
 		for _, filter := range req.Filters {
-			countQuery = pagination.FilterBy(filter)(countQuery)
+			countQuery = query.FilterBy(filter)(countQuery)
 		}
 		if req.Search != "" {
-			countQuery = pagination.Search(req.Search, "name", "description", "location")(countQuery)
+			countQuery = query.Search(req.Search, "name", "description", "location")(countQuery)
 		}
 		countQuery.Count(&total)
 	}
 
 	// Execute main query
-	query := builder.Build()
-	if err := query.Preload("Owner").Find(&events).Error; err != nil {
+	dbQuery := builder.Build()
+	if err := dbQuery.Preload("Owner").Find(&events).Error; err != nil {
 		logging.Error(ctx, "failed to retrieve events with advanced pagination", err)
 		return nil, nil, appErrors.New(appErrors.ErrDatabaseOperation, "failed to retrieve events")
 	}
@@ -188,7 +188,7 @@ func (r *EventRepository) ListWithAdvancedPagination(ctx context.Context, req *p
 	}
 
 	// Build response
-	result := pagination.BuildResponse(events, req, total, len(events), firstID, lastID)
+	result := query.BuildResponse(events, req, total, len(events), firstID, lastID)
 
 	logging.Info(ctx, "events retrieved with advanced pagination",
 		"count", len(events),

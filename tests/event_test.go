@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"github.com/alireza-akbarzadeh/ginflow/tests/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -52,10 +52,10 @@ func TestEventManagement(t *testing.T) {
 		events := []*models.Event{
 			{ID: 1, Name: "Event 1", OwnerID: userID},
 		}
-		result := &pagination.AdvancedPaginatedResult{
+		result := &query.AdvancedPaginatedResult{
 			Success: true,
 			Data:    events,
-			Pagination: &pagination.AdvancedPaginationResponse{
+			Pagination: &query.AdvancedPaginationResponse{
 				Page:        1,
 				PageSize:    20,
 				TotalItems:  1,
@@ -65,7 +65,7 @@ func TestEventManagement(t *testing.T) {
 				Count:       1,
 			},
 		}
-		mockEventRepo.On("ListWithAdvancedPagination", mock.Anything, mock.AnythingOfType("*pagination.AdvancedPaginationRequest")).Return(events, result, nil).Once()
+		mockEventRepo.On("ListWithAdvancedPagination", mock.Anything, mock.AnythingOfType("*query.AdvancedPaginationRequest")).Return(events, result, nil).Once()
 
 		w := ts.createRequest("GET", "/api/v1/events", nil)
 		assert.Equal(t, http.StatusOK, w.Code)

@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"gorm.io/gorm"
 )
 
@@ -62,33 +62,33 @@ func (r *ProductRepository) GetAll(ctx context.Context, page, limit int, search 
 }
 
 // ListWithAdvancedPagination retrieves products with advanced pagination, filtering, sorting, and search
-func (r *ProductRepository) ListWithAdvancedPagination(ctx context.Context, req *pagination.AdvancedPaginationRequest) ([]models.Product, *pagination.AdvancedPaginatedResult, error) {
+func (r *ProductRepository) ListWithAdvancedPagination(ctx context.Context, req *query.QueryParams) ([]models.Product, *query.PaginatedList, error) {
 	var products []models.Product
 	var total int64
 
 	// Build pagination query
-	builder := pagination.NewPaginationBuilder(r.DB.WithContext(ctx).Model(&models.Product{})).
+	builder := query.NewQueryBuilder(r.DB.WithContext(ctx).Model(&models.Product{})).
 		WithRequest(req).
 		AllowFilters("name", "slug", "user_id", "price", "status", "created_at").
 		AllowSorts("name", "price", "created_at", "updated_at").
 		SearchColumns("name", "slug", "description").
-		DefaultSort("created_at", pagination.SortDesc)
+		DefaultSort("created_at", query.SortDesc)
 
 	// Get count if needed
 	if req.IncludeTotal {
 		countQuery := r.DB.WithContext(ctx).Model(&models.Product{})
 		for _, filter := range req.Filters {
-			countQuery = pagination.FilterBy(filter)(countQuery)
+			countQuery = query.FilterBy(filter)(countQuery)
 		}
 		if req.Search != "" {
-			countQuery = pagination.Search(req.Search, "name", "slug", "description")(countQuery)
+			countQuery = query.Search(req.Search, "name", "slug", "description")(countQuery)
 		}
 		countQuery.Count(&total)
 	}
 
 	// Execute main query
-	query := builder.Build()
-	if err := query.Preload("User").Preload("Categories").Find(&products).Error; err != nil {
+	dbQuery := builder.Build()
+	if err := dbQuery.Preload("User").Preload("Categories").Find(&products).Error; err != nil {
 		return nil, nil, err
 	}
 
@@ -100,7 +100,7 @@ func (r *ProductRepository) ListWithAdvancedPagination(ctx context.Context, req 
 	}
 
 	// Build response
-	result := pagination.BuildResponse(products, req, total, len(products), firstID, lastID)
+	result := query.BuildResponse(products, req, total, len(products), firstID, lastID)
 
 	return products, result, nil
 }

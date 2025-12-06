@@ -7,7 +7,7 @@ import (
 	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
 	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"gorm.io/gorm"
 )
 
@@ -89,7 +89,7 @@ func (r *CategoryRepository) GetBySlug(ctx context.Context, slug string) (*model
 }
 
 // ListWithPagination retrieves categories with pagination
-func (r *CategoryRepository) ListWithPagination(ctx context.Context, req *pagination.PaginationRequest) ([]*models.Category, *pagination.PaginationResponse, error) {
+func (r *CategoryRepository) ListWithPagination(ctx context.Context, req *query.PaginationRequest) ([]*models.Category, *query.PaginationResponse, error) {
 	logging.Debug(ctx, "retrieving categories with pagination", "page", req.Page, "page_size", req.PageSize)
 
 	var categories []*models.Category
@@ -113,7 +113,7 @@ func (r *CategoryRepository) ListWithPagination(ctx context.Context, req *pagina
 
 	// Calculate pagination response
 	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
-	paginationResp := &pagination.PaginationResponse{
+	paginationResp := &query.PaginationResponse{
 		Page:       req.Page,
 		PageSize:   req.PageSize,
 		TotalItems: total,

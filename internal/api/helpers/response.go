@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"github.com/gin-gonic/gin"
 )
 
@@ -98,11 +98,11 @@ func RespondWithPagination(c *gin.Context, data interface{}, total int64, page, 
 // PaginatedResponse represents a paginated API response
 type PaginatedResponse struct {
 	Data       interface{}                    `json:"data"`
-	Pagination *pagination.PaginationResponse `json:"pagination"`
+	Pagination *query.PaginationResponse `json:"pagination"`
 }
 
 // RespondWithPaginatedData sends a paginated response using our pagination structure
-func RespondWithPaginatedData(c *gin.Context, code int, data interface{}, paginationResp *pagination.PaginationResponse) {
+func RespondWithPaginatedData(c *gin.Context, code int, data interface{}, paginationResp *query.PaginationResponse) {
 	c.JSON(code, PaginatedResponse{
 		Data:       data,
 		Pagination: paginationResp,

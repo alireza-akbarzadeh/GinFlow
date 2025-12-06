@@ -647,7 +647,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/pagination.AdvancedPaginatedResult"
+                                    "$ref": "#/definitions/query.AdvancedPaginatedResult"
                                 },
                                 {
                                     "type": "object",
@@ -1385,7 +1385,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/pagination.AdvancedPaginatedResult"
+                                    "$ref": "#/definitions/query.AdvancedPaginatedResult"
                                 },
                                 {
                                     "type": "object",
@@ -2248,7 +2248,7 @@ const docTemplate = `{
             "properties": {
                 "data": {},
                 "pagination": {
-                    "$ref": "#/definitions/pagination.PaginationResponse"
+                    "$ref": "#/definitions/query.PaginationResponse"
                 }
             }
         },
@@ -2643,7 +2643,7 @@ const docTemplate = `{
                 }
             }
         },
-        "pagination.AdvancedPaginatedResult": {
+        "query.AdvancedPaginatedResult": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -2652,27 +2652,27 @@ const docTemplate = `{
                     "additionalProperties": true
                 },
                 "pagination": {
-                    "$ref": "#/definitions/pagination.AdvancedPaginationResponse"
+                    "$ref": "#/definitions/query.AdvancedPaginationResponse"
                 },
                 "success": {
                     "type": "boolean"
                 }
             }
         },
-        "pagination.AdvancedPaginationResponse": {
+        "query.AdvancedPaginationResponse": {
             "type": "object",
             "properties": {
                 "applied_filters": {
                     "description": "Applied filters \u0026 sorts for transparency",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/pagination.Filter"
+                        "$ref": "#/definitions/query.Filter"
                     }
                 },
                 "applied_sort": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/pagination.SortField"
+                        "$ref": "#/definitions/query.SortField"
                     }
                 },
                 "count": {
@@ -2692,7 +2692,7 @@ const docTemplate = `{
                     "description": "HATEOAS navigation links",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/pagination.PaginationLinks"
+                            "$ref": "#/definitions/query.PaginationLinks"
                         }
                     ]
                 },
@@ -2715,14 +2715,14 @@ const docTemplate = `{
                 }
             }
         },
-        "pagination.Filter": {
+        "query.Filter": {
             "type": "object",
             "properties": {
                 "field": {
                     "type": "string"
                 },
                 "operator": {
-                    "$ref": "#/definitions/pagination.FilterOperator"
+                    "$ref": "#/definitions/query.FilterOperator"
                 },
                 "value": {},
                 "values": {
@@ -2732,7 +2732,7 @@ const docTemplate = `{
                 }
             }
         },
-        "pagination.FilterOperator": {
+        "query.FilterOperator": {
             "type": "string",
             "enum": [
                 "eq",
@@ -2795,7 +2795,7 @@ const docTemplate = `{
                 "OpBetween"
             ]
         },
-        "pagination.PaginationLinks": {
+        "query.PaginationLinks": {
             "type": "object",
             "properties": {
                 "first": {
@@ -2815,7 +2815,7 @@ const docTemplate = `{
                 }
             }
         },
-        "pagination.PaginationResponse": {
+        "query.PaginationResponse": {
             "type": "object",
             "properties": {
                 "has_next": {
@@ -2838,7 +2838,7 @@ const docTemplate = `{
                 }
             }
         },
-        "pagination.SortDirection": {
+        "query.SortDirection": {
             "type": "string",
             "enum": [
                 "asc",
@@ -2849,11 +2849,11 @@ const docTemplate = `{
                 "SortDesc"
             ]
         },
-        "pagination.SortField": {
+        "query.SortField": {
             "type": "object",
             "properties": {
                 "direction": {
-                    "$ref": "#/definitions/pagination.SortDirection"
+                    "$ref": "#/definitions/query.SortDirection"
                 },
                 "field": {
                     "type": "string"

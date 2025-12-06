@@ -7,7 +7,7 @@ import (
 	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
 	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"gorm.io/gorm"
 )
 
@@ -145,7 +145,7 @@ func (r *ProfileRepository) DeleteByUserID(ctx context.Context, id int) error {
 }
 
 // ListWithPagination retrieves profiles with pagination
-func (r *ProfileRepository) ListWithPagination(ctx context.Context, req *pagination.PaginationRequest) ([]*models.Profile, *pagination.PaginationResponse, error) {
+func (r *ProfileRepository) ListWithPagination(ctx context.Context, req *query.PaginationRequest) ([]*models.Profile, *query.PaginationResponse, error) {
 	logging.Debug(ctx, "retrieving profiles with pagination", "page", req.Page, "page_size", req.PageSize)
 
 	var profiles []*models.Profile
@@ -168,7 +168,7 @@ func (r *ProfileRepository) ListWithPagination(ctx context.Context, req *paginat
 
 	// Calculate pagination response
 	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
-	paginationResp := &pagination.PaginationResponse{
+	paginationResp := &query.PaginationResponse{
 		Page:       req.Page,
 		PageSize:   req.PageSize,
 		TotalItems: total,
@@ -182,24 +182,24 @@ func (r *ProfileRepository) ListWithPagination(ctx context.Context, req *paginat
 }
 
 // SearchWithPagination searches profiles with pagination
-func (r *ProfileRepository) SearchWithPagination(ctx context.Context, searchTerm string, req *pagination.PaginationRequest) ([]*models.Profile, *pagination.PaginationResponse, error) {
+func (r *ProfileRepository) SearchWithPagination(ctx context.Context, searchTerm string, req *query.PaginationRequest) ([]*models.Profile, *query.PaginationResponse, error) {
 	logging.Debug(ctx, "searching profiles with pagination", "search_term", searchTerm, "page", req.Page, "page_size", req.PageSize)
 
 	var profiles []*models.Profile
 	var total int64
 
-	query := r.DB.WithContext(ctx).Model(&models.Profile{}).
+	dbQuery := r.DB.WithContext(ctx).Model(&models.Profile{}).
 		Where("first_name ILIKE ? OR last_name ILIKE ? OR bio ILIKE ?",
 			"%"+searchTerm+"%", "%"+searchTerm+"%", "%"+searchTerm+"%")
 
 	// Count total records
-	if err := query.Count(&total).Error; err != nil {
+	if err := dbQuery.Count(&total).Error; err != nil {
 		logging.Error(ctx, "failed to count search results", err, "search_term", searchTerm)
 		return nil, nil, appErrors.New(appErrors.ErrDatabaseOperation, "failed to count search results")
 	}
 
 	// Get paginated records
-	if err := query.Offset(req.Offset()).
+	if err := dbQuery.Offset(req.Offset()).
 		Limit(req.PageSize).
 		Find(&profiles).Error; err != nil {
 		logging.Error(ctx, "failed to search profiles", err, "search_term", searchTerm)
@@ -208,7 +208,7 @@ func (r *ProfileRepository) SearchWithPagination(ctx context.Context, searchTerm
 
 	// Calculate pagination response
 	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
-	paginationResp := &pagination.PaginationResponse{
+	paginationResp := &query.PaginationResponse{
 		Page:       req.Page,
 		PageSize:   req.PageSize,
 		TotalItems: total,

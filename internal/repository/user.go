@@ -8,7 +8,7 @@ import (
 	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
 	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"gorm.io/gorm"
 )
 
@@ -93,16 +93,6 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID int, hashedP
 	return nil
 }
 
-// GetAll retrieves all users
-func (r *UserRepository) GetAll(ctx context.Context) ([]*models.User, error) {
-	var users []*models.User
-	result := r.DB.WithContext(ctx).Find(&users)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return users, nil
-}
-
 // Update updates an existing user
 func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 	logging.Debug(ctx, "updating user", "user_id", user.ID, "email", user.Email)
@@ -156,39 +146,62 @@ func (r *UserRepository) UpdateLastLogin(ctx context.Context, id int) error {
 	return nil
 }
 
-// ListWithPagination retrieves users with pagination
-func (r *UserRepository) ListWithPagination(ctx context.Context, req *pagination.PaginationRequest) ([]*models.User, *pagination.PaginationResponse, error) {
-	logging.Debug(ctx, "retrieving users with pagination", "page", req.Page, "page_size", req.PageSize)
+// GetAll retrieves users with filtering, sorting, search, and pagination
+func (r *UserRepository) GetAll(ctx context.Context, params *query.QueryParams) ([]*models.User, *query.PaginatedList, error) {
+	logging.Debug(ctx, "retrieving users",
+		"page", params.Page,
+		"page_size", params.PageSize,
+		"search", params.Search,
+	)
 
 	var users []*models.User
 	var total int64
 
-	// Count total records
-	if err := r.DB.WithContext(ctx).Model(&models.User{}).Count(&total).Error; err != nil {
-		logging.Error(ctx, "failed to count users", err)
-		return nil, nil, appErrors.New(appErrors.ErrDatabaseOperation, "failed to count users")
+	// Build query with security controls
+	builder := query.NewQueryBuilder(r.DB.WithContext(ctx).Model(&models.User{})).
+		WithRequest(params).
+		AllowFilters("name", "email", "created_at", "last_login").             // Whitelist filter fields
+		AllowSorts("name", "email", "created_at", "updated_at", "last_login"). // Whitelist sort fields
+		SearchColumns("name", "email").                                        // Searchable columns
+		DefaultSort("created_at", query.SortDesc)                              // Default sort order
+
+	// Get count if needed
+	if params.IncludeTotal {
+		countQuery := r.DB.WithContext(ctx).Model(&models.User{})
+		for _, filter := range params.Filters {
+			countQuery = query.FilterBy(filter)(countQuery)
+		}
+		if params.Search != "" {
+			countQuery = query.Search(params.Search, "name", "email")(countQuery)
+		}
+		if err := countQuery.Count(&total).Error; err != nil {
+			logging.Error(ctx, "failed to count users", err)
+			return nil, nil, appErrors.New(appErrors.ErrDatabaseOperation, "failed to count users")
+		}
 	}
 
-	// Get paginated records
-	if err := r.DB.WithContext(ctx).
-		Offset(req.Offset()).
-		Limit(req.PageSize).
-		Find(&users).Error; err != nil {
+	// Execute main query
+	dbQuery := builder.Build()
+	if err := dbQuery.Find(&users).Error; err != nil {
 		logging.Error(ctx, "failed to retrieve users", err)
 		return nil, nil, appErrors.New(appErrors.ErrDatabaseOperation, "failed to retrieve users")
 	}
 
-	// Calculate pagination response
-	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
-	paginationResp := &pagination.PaginationResponse{
-		Page:       req.Page,
-		PageSize:   req.PageSize,
-		TotalItems: total,
-		TotalPages: totalPages,
-		HasNext:    req.Page < totalPages,
-		HasPrev:    req.Page > 1,
+	// Get first and last IDs for cursor pagination
+	var firstID, lastID int
+	if len(users) > 0 {
+		firstID = users[0].ID
+		lastID = users[len(users)-1].ID
 	}
 
-	logging.Info(ctx, "users retrieved successfully", "count", len(users), "total", total, "page", req.Page)
-	return users, paginationResp, nil
+	// Build response with HATEOAS links
+	result := query.BuildResponse(users, params, total, len(users), firstID, lastID)
+
+	logging.Info(ctx, "users retrieved successfully",
+		"count", len(users),
+		"total", total,
+		"page", params.Page,
+	)
+
+	return users, result, nil
 }

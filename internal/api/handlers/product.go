@@ -8,7 +8,7 @@ import (
 	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
 	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"github.com/alireza-akbarzadeh/ginflow/internal/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -74,14 +74,14 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 // @Param        price[gte]  query     number  false  "Filter by minimum price"
 // @Param        price[lte]  query     number  false  "Filter by maximum price"
 // @Param        user_id[eq] query     int     false  "Filter by user ID"
-// @Success      200         {object}  pagination.AdvancedPaginatedResult{data=[]models.Product}
+// @Success      200         {object}  query.AdvancedPaginatedResult{data=[]models.Product}
 // @Failure      500         {object}  helpers.ErrorResponse
 // @Router       /api/v1/products [get]
 func (h *Handler) GetAllProducts(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Parse advanced pagination parameters from context
-	req := pagination.ParseFromContext(c)
+	req := query.ParseFromContext(c)
 
 	logging.Debug(ctx, "retrieving all products with advanced pagination",
 		"page", req.Page,

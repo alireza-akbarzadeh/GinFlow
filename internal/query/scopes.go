@@ -1,4 +1,4 @@
-package pagination
+package query
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 // ===========================================
 
 // Paginate is a GORM scope for simple offset pagination
-// Usage: db.Scopes(pagination.Paginate(page, pageSize)).Find(&users)
+// Usage: db.Scopes(query.Paginate(page, pageSize)).Find(&users)
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		// Validate and set defaults
@@ -33,7 +33,7 @@ func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 }
 
 // Search is a GORM scope for case-insensitive search across multiple columns
-// Usage: db.Scopes(pagination.Search("john", "name", "email")).Find(&users)
+// Usage: db.Scopes(query.Search("john", "name", "email")).Find(&users)
 func Search(term string, columns ...string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if term == "" || len(columns) == 0 {
@@ -54,7 +54,7 @@ func Search(term string, columns ...string) func(db *gorm.DB) *gorm.DB {
 }
 
 // SortBy is a GORM scope for sorting by a single field
-// Usage: db.Scopes(pagination.SortBy("created_at", pagination.SortDesc)).Find(&users)
+// Usage: db.Scopes(query.SortBy("created_at", query.SortDesc)).Find(&users)
 func SortBy(field string, direction SortDirection) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if field == "" {
@@ -71,7 +71,7 @@ func SortBy(field string, direction SortDirection) func(db *gorm.DB) *gorm.DB {
 }
 
 // FilterBy is a GORM scope for applying multiple filters
-// Usage: db.Scopes(pagination.FilterBy(filters...)).Find(&users)
+// Usage: db.Scopes(query.FilterBy(filters...)).Find(&users)
 func FilterBy(filters ...Filter) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		for _, filter := range filters {
@@ -82,7 +82,7 @@ func FilterBy(filters ...Filter) func(db *gorm.DB) *gorm.DB {
 }
 
 // WhereEqual is a convenience scope for simple equality filter
-// Usage: db.Scopes(pagination.WhereEqual("status", "active")).Find(&users)
+// Usage: db.Scopes(query.WhereEqual("status", "active")).Find(&users)
 func WhereEqual(field string, value interface{}) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where(fmt.Sprintf("%s = ?", field), value)
@@ -90,7 +90,7 @@ func WhereEqual(field string, value interface{}) func(db *gorm.DB) *gorm.DB {
 }
 
 // WhereIn is a convenience scope for IN filter
-// Usage: db.Scopes(pagination.WhereIn("status", []string{"active", "pending"})).Find(&users)
+// Usage: db.Scopes(query.WhereIn("status", []string{"active", "pending"})).Find(&users)
 func WhereIn(field string, values interface{}) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where(fmt.Sprintf("%s IN ?", field), values)
@@ -98,7 +98,7 @@ func WhereIn(field string, values interface{}) func(db *gorm.DB) *gorm.DB {
 }
 
 // WhereBetween is a convenience scope for BETWEEN filter
-// Usage: db.Scopes(pagination.WhereBetween("price", 100, 500)).Find(&products)
+// Usage: db.Scopes(query.WhereBetween("price", 100, 500)).Find(&products)
 func WhereBetween(field string, min, max interface{}) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where(fmt.Sprintf("%s BETWEEN ? AND ?", field), min, max)
@@ -106,7 +106,7 @@ func WhereBetween(field string, min, max interface{}) func(db *gorm.DB) *gorm.DB
 }
 
 // WhereNotNull is a convenience scope for NOT NULL filter
-// Usage: db.Scopes(pagination.WhereNotNull("deleted_at")).Find(&users)
+// Usage: db.Scopes(query.WhereNotNull("deleted_at")).Find(&users)
 func WhereNotNull(field string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where(fmt.Sprintf("%s IS NOT NULL", field))
@@ -114,7 +114,7 @@ func WhereNotNull(field string) func(db *gorm.DB) *gorm.DB {
 }
 
 // WhereNull is a convenience scope for NULL filter
-// Usage: db.Scopes(pagination.WhereNull("deleted_at")).Find(&users)
+// Usage: db.Scopes(query.WhereNull("deleted_at")).Find(&users)
 func WhereNull(field string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where(fmt.Sprintf("%s IS NULL", field))
@@ -122,19 +122,19 @@ func WhereNull(field string) func(db *gorm.DB) *gorm.DB {
 }
 
 // OrderByCreatedAt is a convenience scope for ordering by created_at
-// Usage: db.Scopes(pagination.OrderByCreatedAt(pagination.SortDesc)).Find(&users)
+// Usage: db.Scopes(query.OrderByCreatedAt(query.SortDesc)).Find(&users)
 func OrderByCreatedAt(direction SortDirection) func(db *gorm.DB) *gorm.DB {
 	return SortBy("created_at", direction)
 }
 
 // OrderByUpdatedAt is a convenience scope for ordering by updated_at
-// Usage: db.Scopes(pagination.OrderByUpdatedAt(pagination.SortDesc)).Find(&users)
+// Usage: db.Scopes(query.OrderByUpdatedAt(query.SortDesc)).Find(&users)
 func OrderByUpdatedAt(direction SortDirection) func(db *gorm.DB) *gorm.DB {
 	return SortBy("updated_at", direction)
 }
 
 // Limit is a simple GORM scope for limiting results
-// Usage: db.Scopes(pagination.Limit(10)).Find(&users)
+// Usage: db.Scopes(query.Limit(10)).Find(&users)
 func Limit(limit int) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if limit <= 0 {

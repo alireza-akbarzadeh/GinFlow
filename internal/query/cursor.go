@@ -1,4 +1,4 @@
-package pagination
+package query
 
 import (
 	"encoding/base64"

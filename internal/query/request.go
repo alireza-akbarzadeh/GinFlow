@@ -1,4 +1,4 @@
-package pagination
+package query
 
 // ===========================================
 // BASIC PAGINATION REQUEST (Backwards Compatible)
@@ -40,8 +40,8 @@ func (p *PaginationRequest) Validate() {
 // ADVANCED PAGINATION REQUEST
 // ===========================================
 
-// AdvancedPaginationRequest holds all pagination, filtering, and sorting parameters
-type AdvancedPaginationRequest struct {
+// QueryParams holds all query parameters: pagination, filtering, sorting, and search
+type QueryParams struct {
 	// Pagination type (offset or cursor)
 	Type PaginationType `json:"type" form:"type"`
 
@@ -75,9 +75,9 @@ type AdvancedPaginationRequest struct {
 	BaseURL string `json:"-"`
 }
 
-// NewAdvancedPaginationRequest creates a new advanced pagination request with defaults
-func NewAdvancedPaginationRequest() *AdvancedPaginationRequest {
-	return &AdvancedPaginationRequest{
+// NewQueryParams creates a new query params with defaults
+func NewQueryParams() *QueryParams {
+	return &QueryParams{
 		Type:         OffsetPagination,
 		Page:         1,
 		PageSize:     20,
@@ -86,7 +86,7 @@ func NewAdvancedPaginationRequest() *AdvancedPaginationRequest {
 }
 
 // Validate ensures pagination values are within acceptable ranges
-func (r *AdvancedPaginationRequest) Validate() {
+func (r *QueryParams) Validate() {
 	if r.Page <= 0 {
 		r.Page = 1
 	}
@@ -99,26 +99,33 @@ func (r *AdvancedPaginationRequest) Validate() {
 }
 
 // Offset calculates the database offset for the current page
-func (r *AdvancedPaginationRequest) Offset() int {
+func (r *QueryParams) Offset() int {
 	return (r.Page - 1) * r.PageSize
 }
 
 // IsCursorBased returns true if using cursor-based pagination
-func (r *AdvancedPaginationRequest) IsCursorBased() bool {
+func (r *QueryParams) IsCursorBased() bool {
 	return r.Type == CursorPagination
 }
 
 // HasFilters returns true if any filters are applied
-func (r *AdvancedPaginationRequest) HasFilters() bool {
+func (r *QueryParams) HasFilters() bool {
 	return len(r.Filters) > 0
 }
 
 // HasSort returns true if any sorting is applied
-func (r *AdvancedPaginationRequest) HasSort() bool {
+func (r *QueryParams) HasSort() bool {
 	return len(r.Sort) > 0
 }
 
 // HasSearch returns true if a search term is provided
-func (r *AdvancedPaginationRequest) HasSearch() bool {
+func (r *QueryParams) HasSearch() bool {
 	return r.Search != ""
+}
+
+// Aliases for backward compatibility
+type AdvancedPaginationRequest = QueryParams
+
+func NewAdvancedPaginationRequest() *QueryParams {
+	return NewQueryParams()
 }

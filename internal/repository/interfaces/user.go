@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 )
 
 type UserRepositoryInterface interface {
@@ -12,9 +12,8 @@ type UserRepositoryInterface interface {
 	Get(ctx context.Context, id int) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	UpdatePassword(ctx context.Context, userID int, hashedPassword string) error
-	GetAll(ctx context.Context) ([]*models.User, error)
 	Update(ctx context.Context, user *models.User) error
 	Delete(ctx context.Context, id int) error
 	UpdateLastLogin(ctx context.Context, id int) error
-	ListWithPagination(ctx context.Context, req *pagination.PaginationRequest) ([]*models.User, *pagination.PaginationResponse, error)
+	GetAll(ctx context.Context, params *query.QueryParams) ([]*models.User, *query.PaginatedList, error)
 }

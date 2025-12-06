@@ -2,25 +2,32 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/helpers"
 	appErrors "github.com/alireza-akbarzadeh/ginflow/internal/errors"
 	"github.com/alireza-akbarzadeh/ginflow/internal/logging"
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
-	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
+	"github.com/alireza-akbarzadeh/ginflow/internal/query"
 	"github.com/gin-gonic/gin"
 )
 
-// GetAllUsers retrieves all users with pagination
+// GetAllUsers retrieves all users with pagination, filtering, sorting, and search
 // @Summary      Get all users
-// @Description  Get a paginated list of all registered users
+// @Description  Get a paginated list of all registered users with filtering, sorting, and search
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        page      query     int     false  "Page number (default: 1)"
-// @Param        page_size query     int     false  "Page size (default: 20)"
-// @Success      200  {object}  helpers.PaginatedResponse{data=[]models.User}
+// @Param        page        query     int     false  "Page number (default: 1)"
+// @Param        page_size   query     int     false  "Page size (default: 20, max: 100)"
+// @Param        type        query     string  false  "Pagination type: 'offset' or 'cursor' (default: offset)"
+// @Param        cursor      query     string  false  "Cursor for cursor-based pagination"
+// @Param        sort        query     string  false  "Sort fields (e.g., '-created_at,name:asc')"
+// @Param        search      query     string  false  "Search term for name, email"
+// @Param        name[like]  query     string  false  "Filter by name (partial match)"
+// @Param        email[like] query     string  false  "Filter by email (partial match)"
+// @Param        created_at[gte] query string false  "Filter by minimum created date"
+// @Param        created_at[lte] query string false  "Filter by maximum created date"
+// @Success      200  {object}  query.PaginatedList{data=[]models.User}
 // @Failure      400  {object}  helpers.ErrorResponse
 // @Failure      401  {object}  helpers.ErrorResponse
 // @Failure      500  {object}  helpers.ErrorResponse
@@ -28,34 +35,27 @@ import (
 // @Router       /api/v1/users [get]
 func (h *Handler) GetAllUsers(c *gin.Context) {
 	ctx := c.Request.Context()
-	logging.Debug(ctx, "handling GetAllUsers request")
 
-	// Parse pagination parameters
-	req := pagination.NewPaginationRequest()
-	if page := c.Query("page"); page != "" {
-		if p, err := strconv.Atoi(page); err == nil && p > 0 {
-			req.Page = p
-		}
-	}
-	if pageSize := c.Query("page_size"); pageSize != "" {
-		if ps, err := strconv.Atoi(pageSize); err == nil && ps > 0 && ps <= 100 {
-			req.PageSize = ps
-		}
-	}
+	// Parse query parameters from context
+	params := query.ParseFromContext(c)
 
-	users, paginationResp, err := h.Repos.Users.ListWithPagination(ctx, req)
-	if err != nil {
-		logging.Error(ctx, "failed to retrieve users", err)
-		if appErr, ok := err.(*appErrors.AppError); ok {
-			helpers.RespondWithError(c, appErr.StatusCode, appErr.Message)
-		} else {
-			helpers.RespondWithError(c, http.StatusInternalServerError, "Failed to retrieve users")
-		}
+	logging.Debug(ctx, "retrieving all users",
+		"page", params.Page,
+		"page_size", params.PageSize,
+		"search", params.Search,
+	)
+
+	users, result, err := h.Repos.Users.GetAll(ctx, params)
+	if helpers.HandleError(c, err, "Failed to retrieve users") {
 		return
 	}
 
-	logging.Info(ctx, "users retrieved successfully", "count", len(users), "page", req.Page)
-	helpers.RespondWithPaginatedData(c, http.StatusOK, users, paginationResp)
+	logging.Debug(ctx, "users retrieved successfully",
+		"count", len(users),
+		"page", params.Page,
+	)
+
+	c.JSON(http.StatusOK, result)
 }
 
 // UpdateUser updates a user's profile

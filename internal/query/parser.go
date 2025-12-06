@@ -1,4 +1,4 @@
-package pagination
+package query
 
 import (
 	"encoding/json"
@@ -12,9 +12,9 @@ import (
 // REQUEST PARSER
 // ===========================================
 
-// ParseFromContext parses pagination request from gin context
-func ParseFromContext(c *gin.Context) *AdvancedPaginationRequest {
-	req := NewAdvancedPaginationRequest()
+// ParseFromContext parses query params from gin context
+func ParseFromContext(c *gin.Context) *QueryParams {
+	req := NewQueryParams()
 
 	// Parse pagination type
 	parsePaginationType(c, req)
@@ -41,13 +41,13 @@ func ParseFromContext(c *gin.Context) *AdvancedPaginationRequest {
 	return req
 }
 
-func parsePaginationType(c *gin.Context, req *AdvancedPaginationRequest) {
+func parsePaginationType(c *gin.Context, req *QueryParams) {
 	if pType := c.Query("type"); pType == "cursor" {
 		req.Type = CursorPagination
 	}
 }
 
-func parseOffsetParams(c *gin.Context, req *AdvancedPaginationRequest) {
+func parseOffsetParams(c *gin.Context, req *QueryParams) {
 	if page := c.Query("page"); page != "" {
 		if p, err := strconv.Atoi(page); err == nil && p > 0 {
 			req.Page = p
@@ -61,7 +61,7 @@ func parseOffsetParams(c *gin.Context, req *AdvancedPaginationRequest) {
 	}
 }
 
-func parseCursorParams(c *gin.Context, req *AdvancedPaginationRequest) {
+func parseCursorParams(c *gin.Context, req *QueryParams) {
 	req.Cursor = c.Query("cursor")
 	req.After = c.Query("after")
 	req.Before = c.Query("before")
@@ -81,14 +81,14 @@ func parseCursorParams(c *gin.Context, req *AdvancedPaginationRequest) {
 	}
 }
 
-func parseSorting(c *gin.Context, req *AdvancedPaginationRequest) {
+func parseSorting(c *gin.Context, req *QueryParams) {
 	if sortRaw := c.Query("sort"); sortRaw != "" {
 		req.SortRaw = sortRaw
 		req.Sort = ParseSortString(sortRaw)
 	}
 }
 
-func parseFiltering(c *gin.Context, req *AdvancedPaginationRequest) {
+func parseFiltering(c *gin.Context, req *QueryParams) {
 	// Parse filter query param (JSON format)
 	if filterRaw := c.Query("filter"); filterRaw != "" {
 		req.FilterRaw = filterRaw
@@ -106,12 +106,12 @@ func parseFiltering(c *gin.Context, req *AdvancedPaginationRequest) {
 	}
 }
 
-func parseSearch(c *gin.Context, req *AdvancedPaginationRequest) {
+func parseSearch(c *gin.Context, req *QueryParams) {
 	req.Search = c.Query("search")
 	req.SearchFields = c.QueryArray("search_fields")
 }
 
-func parseOptions(c *gin.Context, req *AdvancedPaginationRequest) {
+func parseOptions(c *gin.Context, req *QueryParams) {
 	if includeTotal := c.Query("include_total"); includeTotal != "" {
 		req.IncludeTotal = includeTotal == "true" || includeTotal == "1"
 	}

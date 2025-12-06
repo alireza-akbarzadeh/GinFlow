@@ -1,4 +1,4 @@
-package pagination
+package query
 
 import (
 	"math"
@@ -42,8 +42,8 @@ type PaginatedResult struct {
 // ADVANCED PAGINATION RESPONSE
 // ===========================================
 
-// AdvancedPaginationResponse holds enhanced pagination metadata
-type AdvancedPaginationResponse struct {
+// PageInfo holds enhanced pagination metadata
+type PageInfo struct {
 	// Offset-based pagination info
 	Page       int   `json:"page,omitempty"`
 	PageSize   int   `json:"page_size"`
@@ -67,6 +67,9 @@ type AdvancedPaginationResponse struct {
 	AppliedSort    []SortField `json:"applied_sort,omitempty"`
 }
 
+// Alias for backward compatibility
+type AdvancedPaginationResponse = PageInfo
+
 // PaginationLinks holds HATEOAS navigation links
 type PaginationLinks struct {
 	Self  string `json:"self"`
@@ -76,13 +79,16 @@ type PaginationLinks struct {
 	Prev  string `json:"prev,omitempty"`
 }
 
-// AdvancedPaginatedResult wraps paginated data with enhanced metadata
-type AdvancedPaginatedResult struct {
-	Success    bool                        `json:"success"`
-	Data       interface{}                 `json:"data"`
-	Pagination *AdvancedPaginationResponse `json:"pagination"`
-	Meta       map[string]interface{}      `json:"meta,omitempty"`
+// PaginatedList wraps paginated data with enhanced metadata
+type PaginatedList struct {
+	Success    bool                   `json:"success"`
+	Data       interface{}            `json:"data"`
+	Pagination *PageInfo              `json:"pagination"`
+	Meta       map[string]interface{} `json:"meta,omitempty"`
 }
+
+// Alias for backward compatibility
+type AdvancedPaginatedResult = PaginatedList
 
 // ===========================================
 // RESPONSE BUILDER
@@ -91,7 +97,7 @@ type AdvancedPaginatedResult struct {
 // ResponseBuilder helps construct paginated responses
 type ResponseBuilder struct {
 	data    interface{}
-	request *AdvancedPaginationRequest
+	request *QueryParams
 	total   int64
 	count   int
 	firstID int
@@ -112,8 +118,8 @@ func (rb *ResponseBuilder) WithData(data interface{}) *ResponseBuilder {
 	return rb
 }
 
-// WithRequest sets the original pagination request
-func (rb *ResponseBuilder) WithRequest(req *AdvancedPaginationRequest) *ResponseBuilder {
+// WithRequest sets the original query params
+func (rb *ResponseBuilder) WithRequest(req *QueryParams) *ResponseBuilder {
 	rb.request = req
 	return rb
 }
@@ -144,12 +150,12 @@ func (rb *ResponseBuilder) WithMeta(key string, value interface{}) *ResponseBuil
 }
 
 // Build constructs the final paginated response
-func (rb *ResponseBuilder) Build() *AdvancedPaginatedResult {
+func (rb *ResponseBuilder) Build() *PaginatedList {
 	if rb.request == nil {
-		rb.request = NewAdvancedPaginationRequest()
+		rb.request = NewQueryParams()
 	}
 
-	resp := &AdvancedPaginationResponse{
+	resp := &PageInfo{
 		PageSize: rb.request.PageSize,
 		Count:    rb.count,
 	}
@@ -167,7 +173,7 @@ func (rb *ResponseBuilder) Build() *AdvancedPaginatedResult {
 	resp.AppliedFilters = rb.request.Filters
 	resp.AppliedSort = rb.request.Sort
 
-	result := &AdvancedPaginatedResult{
+	result := &PaginatedList{
 		Success:    true,
 		Data:       rb.data,
 		Pagination: resp,
@@ -180,7 +186,7 @@ func (rb *ResponseBuilder) Build() *AdvancedPaginatedResult {
 	return result
 }
 
-func (rb *ResponseBuilder) buildCursorResponse(resp *AdvancedPaginationResponse) {
+func (rb *ResponseBuilder) buildCursorResponse(resp *PageInfo) {
 	if rb.firstID > 0 {
 		resp.StartCursor = EncodeCursor(&CursorData{ID: rb.firstID})
 	}
@@ -191,7 +197,7 @@ func (rb *ResponseBuilder) buildCursorResponse(resp *AdvancedPaginationResponse)
 	resp.HasPrevPage = rb.request.Cursor != "" || rb.request.After != ""
 }
 
-func (rb *ResponseBuilder) buildOffsetResponse(resp *AdvancedPaginationResponse) {
+func (rb *ResponseBuilder) buildOffsetResponse(resp *PageInfo) {
 	resp.Page = rb.request.Page
 	resp.TotalItems = rb.total
 	resp.TotalPages = int(math.Ceil(float64(rb.total) / float64(rb.request.PageSize)))
@@ -202,11 +208,11 @@ func (rb *ResponseBuilder) buildOffsetResponse(resp *AdvancedPaginationResponse)
 // BuildResponse is a convenience function to build a response quickly
 func BuildResponse(
 	data interface{},
-	req *AdvancedPaginationRequest,
+	req *QueryParams,
 	total int64,
 	count int,
 	firstID, lastID int,
-) *AdvancedPaginatedResult {
+) *PaginatedList {
 	return NewResponseBuilder().
 		WithData(data).
 		WithRequest(req).
