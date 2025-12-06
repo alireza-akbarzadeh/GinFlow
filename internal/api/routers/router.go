@@ -3,11 +3,11 @@ package routers
 import (
 	"html/template"
 
+	"github.com/alireza-akbarzadeh/ginflow/cmd/web"
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/handlers"
 	"github.com/alireza-akbarzadeh/ginflow/internal/api/middleware"
 	"github.com/alireza-akbarzadeh/ginflow/internal/constants"
 	"github.com/alireza-akbarzadeh/ginflow/internal/repository/interfaces"
-	"github.com/alireza-akbarzadeh/ginflow/internal/web"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

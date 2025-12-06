@@ -76,6 +76,11 @@ func (h *Handler) GetEvent(c *gin.Context) {
 		return
 	}
 
+	if event == nil {
+		helpers.RespondWithAppError(c, appErrors.Newf(appErrors.ErrNotFound, "event with ID %d not found", id), "")
+		return
+	}
+
 	logging.Debug(ctx, "event retrieved successfully", "event_id", id, "name", event.Name)
 	c.JSON(http.StatusOK, event)
 }

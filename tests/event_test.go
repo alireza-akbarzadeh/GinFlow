@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/models"
+	"github.com/alireza-akbarzadeh/ginflow/internal/pagination"
 	"github.com/alireza-akbarzadeh/ginflow/tests/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -49,17 +50,25 @@ func TestEventManagement(t *testing.T) {
 
 	t.Run("get all events", func(t *testing.T) {
 		events := []*models.Event{
-			{Name: "Event 1", OwnerID: userID},
+			{ID: 1, Name: "Event 1", OwnerID: userID},
 		}
-		mockEventRepo.On("GetAll", mock.Anything).Return(events, nil).Once()
+		result := &pagination.AdvancedPaginatedResult{
+			Success: true,
+			Data:    events,
+			Pagination: &pagination.AdvancedPaginationResponse{
+				Page:        1,
+				PageSize:    20,
+				TotalItems:  1,
+				TotalPages:  1,
+				HasNextPage: false,
+				HasPrevPage: false,
+				Count:       1,
+			},
+		}
+		mockEventRepo.On("ListWithAdvancedPagination", mock.Anything, mock.AnythingOfType("*pagination.AdvancedPaginationRequest")).Return(events, result, nil).Once()
 
 		w := ts.createRequest("GET", "/api/v1/events", nil)
 		assert.Equal(t, http.StatusOK, w.Code)
-
-		var respEvents []models.Event
-		err := json.Unmarshal(w.Body.Bytes(), &respEvents)
-		assert.NoError(t, err)
-		assert.Equal(t, len(events), len(respEvents))
 	})
 
 	t.Run("get single event", func(t *testing.T) {

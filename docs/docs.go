@@ -70,6 +70,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/login": {
+            "post": {
+                "description": "Authenticate user and return JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/logout": {
             "post": {
                 "description": "Invalidate user session (client-side)",
@@ -516,7 +568,7 @@ const docTemplate = `{
         },
         "/api/v1/events": {
             "get": {
-                "description": "Get a list of all events",
+                "description": "Get a paginated list of all events with filtering, sorting, and search",
                 "consumes": [
                     "application/json"
                 ],
@@ -527,14 +579,94 @@ const docTemplate = `{
                     "Events"
                 ],
                 "summary": "Get all events",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default: 20, max: 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pagination type: 'offset' or 'cursor' (default: offset)",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cursor for cursor-based pagination",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort fields (e.g., '-created_at,name:asc')",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search term for name, description, location",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by exact name",
+                        "name": "name[eq]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by name (partial match)",
+                        "name": "name[like]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by location",
+                        "name": "location[eq]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by owner ID",
+                        "name": "owner_id[eq]",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Event"
-                            }
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/pagination.AdvancedPaginatedResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Event"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ErrorResponse"
                         }
                     },
                     "500": {
@@ -1168,7 +1300,7 @@ const docTemplate = `{
         },
         "/api/v1/products": {
             "get": {
-                "description": "Get a list of all products with pagination and optional filtering",
+                "description": "Get a list of all products with advanced pagination, filtering, sorting, and search",
                 "consumes": [
                     "application/json"
                 ],
@@ -1182,26 +1314,68 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Page number",
+                        "description": "Page number (default: 1)",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Items per page",
-                        "name": "limit",
+                        "description": "Page size (default: 20, max: 100)",
+                        "name": "page_size",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Search by name or slug",
+                        "description": "Pagination type: 'offset' or 'cursor' (default: offset)",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cursor for cursor-based pagination",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort fields (e.g., '-created_at,name:asc,price:desc')",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search term for name, slug, description",
                         "name": "search",
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Filter by exact name",
+                        "name": "name[eq]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by name (partial match)",
+                        "name": "name[like]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Filter by minimum price",
+                        "name": "price[gte]",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Filter by maximum price",
+                        "name": "price[lte]",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "description": "Filter by category ID",
-                        "name": "category_id",
+                        "description": "Filter by user ID",
+                        "name": "user_id[eq]",
                         "in": "query"
                     }
                 ],
@@ -1209,8 +1383,22 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/pagination.AdvancedPaginatedResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.Product"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -1752,7 +1940,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get a list of all registered users",
+                "description": "Get a paginated list of all registered users",
                 "consumes": [
                     "application/json"
                 ],
@@ -1763,14 +1951,46 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Get all users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default: 20)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.User"
-                            }
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helpers.PaginatedResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.User"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ErrorResponse"
                         }
                     },
                     "401": {
@@ -1944,6 +2164,33 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "handlers.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.User"
+                }
+            }
+        },
         "handlers.RegisterRequest": {
             "type": "object",
             "required": [
@@ -1984,11 +2231,24 @@ const docTemplate = `{
         "helpers.ErrorResponse": {
             "type": "object",
             "properties": {
+                "details": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "error": {
                     "type": "string"
                 },
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "helpers.PaginatedResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "pagination": {
+                    "$ref": "#/definitions/pagination.PaginationResponse"
                 }
             }
         },
@@ -2379,6 +2639,223 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "pagination.AdvancedPaginatedResult": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "meta": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "pagination": {
+                    "$ref": "#/definitions/pagination.AdvancedPaginationResponse"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "pagination.AdvancedPaginationResponse": {
+            "type": "object",
+            "properties": {
+                "applied_filters": {
+                    "description": "Applied filters \u0026 sorts for transparency",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pagination.Filter"
+                    }
+                },
+                "applied_sort": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pagination.SortField"
+                    }
+                },
+                "count": {
+                    "description": "Current result count",
+                    "type": "integer"
+                },
+                "end_cursor": {
+                    "type": "string"
+                },
+                "has_next_page": {
+                    "type": "boolean"
+                },
+                "has_prev_page": {
+                    "type": "boolean"
+                },
+                "links": {
+                    "description": "HATEOAS navigation links",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/pagination.PaginationLinks"
+                        }
+                    ]
+                },
+                "page": {
+                    "description": "Offset-based pagination info",
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "start_cursor": {
+                    "description": "Cursor-based pagination info",
+                    "type": "string"
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pagination.Filter": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "operator": {
+                    "$ref": "#/definitions/pagination.FilterOperator"
+                },
+                "value": {},
+                "values": {
+                    "description": "For IN, NOT IN, BETWEEN operators",
+                    "type": "array",
+                    "items": {}
+                }
+            }
+        },
+        "pagination.FilterOperator": {
+            "type": "string",
+            "enum": [
+                "eq",
+                "neq",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "like",
+                "ilike",
+                "in",
+                "nin",
+                "null",
+                "notnull",
+                "between"
+            ],
+            "x-enum-comments": {
+                "OpBetween": "Between: field BETWEEN value1 AND value2",
+                "OpEqual": "Equal: field = value",
+                "OpGreaterEqual": "Greater or Equal: field \u003e= value",
+                "OpGreaterThan": "Greater Than: field \u003e value",
+                "OpILike": "Case-insensitive Like",
+                "OpIn": "In: field IN (values)",
+                "OpIsNotNull": "Is Not Null: field IS NOT NULL",
+                "OpIsNull": "Is Null: field IS NULL",
+                "OpLessEqual": "Less or Equal: field \u003c= value",
+                "OpLessThan": "Less Than: field \u003c value",
+                "OpLike": "Like: field LIKE %value%",
+                "OpNotEqual": "Not Equal: field != value",
+                "OpNotIn": "Not In: field NOT IN (values)"
+            },
+            "x-enum-descriptions": [
+                "Equal: field = value",
+                "Not Equal: field != value",
+                "Greater Than: field \u003e value",
+                "Greater or Equal: field \u003e= value",
+                "Less Than: field \u003c value",
+                "Less or Equal: field \u003c= value",
+                "Like: field LIKE %value%",
+                "Case-insensitive Like",
+                "In: field IN (values)",
+                "Not In: field NOT IN (values)",
+                "Is Null: field IS NULL",
+                "Is Not Null: field IS NOT NULL",
+                "Between: field BETWEEN value1 AND value2"
+            ],
+            "x-enum-varnames": [
+                "OpEqual",
+                "OpNotEqual",
+                "OpGreaterThan",
+                "OpGreaterEqual",
+                "OpLessThan",
+                "OpLessEqual",
+                "OpLike",
+                "OpILike",
+                "OpIn",
+                "OpNotIn",
+                "OpIsNull",
+                "OpIsNotNull",
+                "OpBetween"
+            ]
+        },
+        "pagination.PaginationLinks": {
+            "type": "object",
+            "properties": {
+                "first": {
+                    "type": "string"
+                },
+                "last": {
+                    "type": "string"
+                },
+                "next": {
+                    "type": "string"
+                },
+                "prev": {
+                    "type": "string"
+                },
+                "self": {
+                    "type": "string"
+                }
+            }
+        },
+        "pagination.PaginationResponse": {
+            "type": "object",
+            "properties": {
+                "has_next": {
+                    "type": "boolean"
+                },
+                "has_prev": {
+                    "type": "boolean"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pagination.SortDirection": {
+            "type": "string",
+            "enum": [
+                "asc",
+                "desc"
+            ],
+            "x-enum-varnames": [
+                "SortAsc",
+                "SortDesc"
+            ]
+        },
+        "pagination.SortField": {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "$ref": "#/definitions/pagination.SortDirection"
+                },
+                "field": {
                     "type": "string"
                 }
             }

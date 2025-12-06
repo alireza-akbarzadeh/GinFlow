@@ -73,6 +73,12 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	// Check if user was found
+	if user == nil {
+		helpers.RespondWithAppError(c, appErrors.New(appErrors.ErrUnauthorized, "Invalid email or password"), "")
+		return
+	}
+
 	// Verify password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {

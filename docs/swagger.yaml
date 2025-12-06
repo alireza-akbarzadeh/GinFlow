@@ -11,6 +11,24 @@ definitions:
     - productId
     - quantity
     type: object
+  handlers.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handlers.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
   handlers.RegisterRequest:
     properties:
       email:
@@ -39,10 +57,19 @@ definitions:
     type: object
   helpers.ErrorResponse:
     properties:
+      details:
+        additionalProperties: true
+        type: object
       error:
         type: string
       message:
         type: string
+    type: object
+  helpers.PaginatedResponse:
+    properties:
+      data: {}
+      pagination:
+        $ref: '#/definitions/pagination.PaginationResponse'
     type: object
   models.Attendee:
     properties:
@@ -306,6 +333,167 @@ definitions:
       name:
         type: string
     type: object
+  pagination.AdvancedPaginatedResult:
+    properties:
+      data: {}
+      meta:
+        additionalProperties: true
+        type: object
+      pagination:
+        $ref: '#/definitions/pagination.AdvancedPaginationResponse'
+      success:
+        type: boolean
+    type: object
+  pagination.AdvancedPaginationResponse:
+    properties:
+      applied_filters:
+        description: Applied filters & sorts for transparency
+        items:
+          $ref: '#/definitions/pagination.Filter'
+        type: array
+      applied_sort:
+        items:
+          $ref: '#/definitions/pagination.SortField'
+        type: array
+      count:
+        description: Current result count
+        type: integer
+      end_cursor:
+        type: string
+      has_next_page:
+        type: boolean
+      has_prev_page:
+        type: boolean
+      links:
+        allOf:
+        - $ref: '#/definitions/pagination.PaginationLinks'
+        description: HATEOAS navigation links
+      page:
+        description: Offset-based pagination info
+        type: integer
+      page_size:
+        type: integer
+      start_cursor:
+        description: Cursor-based pagination info
+        type: string
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  pagination.Filter:
+    properties:
+      field:
+        type: string
+      operator:
+        $ref: '#/definitions/pagination.FilterOperator'
+      value: {}
+      values:
+        description: For IN, NOT IN, BETWEEN operators
+        items: {}
+        type: array
+    type: object
+  pagination.FilterOperator:
+    enum:
+    - eq
+    - neq
+    - gt
+    - gte
+    - lt
+    - lte
+    - like
+    - ilike
+    - in
+    - nin
+    - "null"
+    - notnull
+    - between
+    type: string
+    x-enum-comments:
+      OpBetween: 'Between: field BETWEEN value1 AND value2'
+      OpEqual: 'Equal: field = value'
+      OpGreaterEqual: 'Greater or Equal: field >= value'
+      OpGreaterThan: 'Greater Than: field > value'
+      OpILike: Case-insensitive Like
+      OpIn: 'In: field IN (values)'
+      OpIsNotNull: 'Is Not Null: field IS NOT NULL'
+      OpIsNull: 'Is Null: field IS NULL'
+      OpLessEqual: 'Less or Equal: field <= value'
+      OpLessThan: 'Less Than: field < value'
+      OpLike: 'Like: field LIKE %value%'
+      OpNotEqual: 'Not Equal: field != value'
+      OpNotIn: 'Not In: field NOT IN (values)'
+    x-enum-descriptions:
+    - 'Equal: field = value'
+    - 'Not Equal: field != value'
+    - 'Greater Than: field > value'
+    - 'Greater or Equal: field >= value'
+    - 'Less Than: field < value'
+    - 'Less or Equal: field <= value'
+    - 'Like: field LIKE %value%'
+    - Case-insensitive Like
+    - 'In: field IN (values)'
+    - 'Not In: field NOT IN (values)'
+    - 'Is Null: field IS NULL'
+    - 'Is Not Null: field IS NOT NULL'
+    - 'Between: field BETWEEN value1 AND value2'
+    x-enum-varnames:
+    - OpEqual
+    - OpNotEqual
+    - OpGreaterThan
+    - OpGreaterEqual
+    - OpLessThan
+    - OpLessEqual
+    - OpLike
+    - OpILike
+    - OpIn
+    - OpNotIn
+    - OpIsNull
+    - OpIsNotNull
+    - OpBetween
+  pagination.PaginationLinks:
+    properties:
+      first:
+        type: string
+      last:
+        type: string
+      next:
+        type: string
+      prev:
+        type: string
+      self:
+        type: string
+    type: object
+  pagination.PaginationResponse:
+    properties:
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  pagination.SortDirection:
+    enum:
+    - asc
+    - desc
+    type: string
+    x-enum-varnames:
+    - SortAsc
+    - SortDesc
+  pagination.SortField:
+    properties:
+      direction:
+        $ref: '#/definitions/pagination.SortDirection'
+      field:
+        type: string
+    type: object
 info:
   contact:
     email: support@example.com
@@ -349,6 +537,40 @@ paths:
       summary: Get events by attendee
       tags:
       - Attendees
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
+      summary: User login
+      tags:
+      - Authentication
   /api/v1/auth/logout:
     post:
       description: Invalidate user session (client-side)
@@ -637,16 +859,67 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get a list of all events
+      description: Get a paginated list of all events with filtering, sorting, and
+        search
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Page size (default: 20, max: 100)'
+        in: query
+        name: page_size
+        type: integer
+      - description: 'Pagination type: ''offset'' or ''cursor'' (default: offset)'
+        in: query
+        name: type
+        type: string
+      - description: Cursor for cursor-based pagination
+        in: query
+        name: cursor
+        type: string
+      - description: Sort fields (e.g., '-created_at,name:asc')
+        in: query
+        name: sort
+        type: string
+      - description: Search term for name, description, location
+        in: query
+        name: search
+        type: string
+      - description: Filter by exact name
+        in: query
+        name: name[eq]
+        type: string
+      - description: Filter by name (partial match)
+        in: query
+        name: name[like]
+        type: string
+      - description: Filter by location
+        in: query
+        name: location[eq]
+        type: string
+      - description: Filter by owner ID
+        in: query
+        name: owner_id[eq]
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.Event'
-            type: array
+            allOf:
+            - $ref: '#/definitions/pagination.AdvancedPaginatedResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Event'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1063,23 +1336,52 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get a list of all products with pagination and optional filtering
+      description: Get a list of all products with advanced pagination, filtering,
+        sorting, and search
       parameters:
-      - description: Page number
+      - description: 'Page number (default: 1)'
         in: query
         name: page
         type: integer
-      - description: Items per page
+      - description: 'Page size (default: 20, max: 100)'
         in: query
-        name: limit
+        name: page_size
         type: integer
-      - description: Search by name or slug
+      - description: 'Pagination type: ''offset'' or ''cursor'' (default: offset)'
+        in: query
+        name: type
+        type: string
+      - description: Cursor for cursor-based pagination
+        in: query
+        name: cursor
+        type: string
+      - description: Sort fields (e.g., '-created_at,name:asc,price:desc')
+        in: query
+        name: sort
+        type: string
+      - description: Search term for name, slug, description
         in: query
         name: search
         type: string
-      - description: Filter by category ID
+      - description: Filter by exact name
         in: query
-        name: category_id
+        name: name[eq]
+        type: string
+      - description: Filter by name (partial match)
+        in: query
+        name: name[like]
+        type: string
+      - description: Filter by minimum price
+        in: query
+        name: price[gte]
+        type: number
+      - description: Filter by maximum price
+        in: query
+        name: price[lte]
+        type: number
+      - description: Filter by user ID
+        in: query
+        name: user_id[eq]
         type: integer
       produces:
       - application/json
@@ -1087,8 +1389,14 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            allOf:
+            - $ref: '#/definitions/pagination.AdvancedPaginatedResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Product'
+                  type: array
+              type: object
         "500":
           description: Internal Server Error
           schema:
@@ -1437,16 +1745,34 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get a list of all registered users
+      description: Get a paginated list of all registered users
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.User'
-            type: array
+            allOf:
+            - $ref: '#/definitions/helpers.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helpers.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
