@@ -15,8 +15,8 @@ func SecurityHeaders() gin.HandlerFunc {
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		// Enforces HTTPS (HSTS) - 1 year
 		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-		// Content Security Policy (Basic)
-		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'")
+		// Content Security Policy - allows Tailwind CDN, AlpineJS, Google Fonts, Font Awesome
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self'")
 
 		c.Next()
 	}
