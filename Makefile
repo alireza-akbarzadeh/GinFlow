@@ -21,7 +21,7 @@ YELLOW=\033[0;33m
 RED=\033[0;31m
 NC=\033[0m # No Color
 
-.PHONY: all build clean test coverage deps run dev docker-build docker-run help
+.PHONY: all build clean test coverage deps run dev docker-build docker-run help migrate reset-db
 
 # Default target
 all: deps build
@@ -33,6 +33,10 @@ help:
 	@echo "$(YELLOW)Setup & Dependencies:$(NC)"
 	@echo "  make deps          - Download and tidy Go dependencies"
 	@echo "  make install-tools - Install development tools (air, swag, golangci-lint)"
+	@echo ""
+	@echo "$(YELLOW)Database:$(NC)"
+	@echo "  make migrate       - Run database migrations"
+	@echo "  make reset-db      - Reset database (drop all tables and re-migrate)"
 	@echo ""
 	@echo "$(YELLOW)Development:$(NC)"
 	@echo "  make run           - Run the application"
@@ -53,6 +57,16 @@ help:
 	@echo "  make docker-run    - Run application in Docker"
 	@echo "  make docker-stop   - Stop Docker containers"
 	@echo ""
+
+## migrate: Run database migrations
+migrate:
+	@echo "$(GREEN)Running database migrations...$(NC)"
+	$(GOCMD) run ./cmd/migrate
+
+## reset-db: Reset database (drop all and re-migrate)
+reset-db:
+	@echo "$(YELLOW)Resetting database...$(NC)"
+	$(GOCMD) run ./cmd/reset-db
 
 ## deps: Download and verify dependencies
 deps:
