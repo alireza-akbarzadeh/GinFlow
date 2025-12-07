@@ -4,11 +4,29 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
+	"io"
 	"log/slog"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+)
+
+// ANSI color codes
+const (
+	colorReset   = "\033[0m"
+	colorRed     = "\033[31m"
+	colorGreen   = "\033[32m"
+	colorYellow  = "\033[33m"
+	colorBlue    = "\033[34m"
+	colorMagenta = "\033[35m"
+	colorCyan    = "\033[36m"
+	colorGray    = "\033[90m"
+	colorWhite   = "\033[97m"
+	colorBold    = "\033[1m"
 )
 
 // ContextKey is the type for context keys
@@ -31,18 +49,161 @@ func init() {
 	InitLogger()
 }
 
+// PrettyHandler is a custom slog handler for pretty console output
+type PrettyHandler struct {
+	opts   slog.HandlerOptions
+	mu     *sync.Mutex
+	out    io.Writer
+	attrs  []slog.Attr
+	groups []string
+}
+
+// NewPrettyHandler creates a new pretty handler
+func NewPrettyHandler(out io.Writer, opts *slog.HandlerOptions) *PrettyHandler {
+	if opts == nil {
+		opts = &slog.HandlerOptions{}
+	}
+	return &PrettyHandler{
+		opts: *opts,
+		mu:   &sync.Mutex{},
+		out:  out,
+	}
+}
+
+func (h *PrettyHandler) Enabled(_ context.Context, level slog.Level) bool {
+	minLevel := slog.LevelInfo
+	if h.opts.Level != nil {
+		minLevel = h.opts.Level.Level()
+	}
+	return level >= minLevel
+}
+
+func (h *PrettyHandler) Handle(_ context.Context, r slog.Record) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	// Format timestamp
+	timeStr := r.Time.Format("15:04:05")
+
+	// Get level with color and emoji
+	levelStr, levelColor := h.formatLevel(r.Level)
+
+	// Build the log line
+	var sb strings.Builder
+
+	// Time in gray
+	sb.WriteString(colorGray)
+	sb.WriteString(timeStr)
+	sb.WriteString(colorReset)
+	sb.WriteString(" ")
+
+	// Level with color
+	sb.WriteString(levelColor)
+	sb.WriteString(levelStr)
+	sb.WriteString(colorReset)
+	sb.WriteString(" ")
+
+	// Message in white/bold
+	sb.WriteString(colorWhite)
+	sb.WriteString(r.Message)
+	sb.WriteString(colorReset)
+
+	// Attributes
+	if r.NumAttrs() > 0 || len(h.attrs) > 0 {
+		sb.WriteString(" ")
+		sb.WriteString(colorGray)
+
+		// Pre-stored attributes
+		for _, attr := range h.attrs {
+			h.writeAttr(&sb, attr)
+		}
+
+		// Record attributes
+		r.Attrs(func(a slog.Attr) bool {
+			h.writeAttr(&sb, a)
+			return true
+		})
+
+		sb.WriteString(colorReset)
+	}
+
+	sb.WriteString("\n")
+
+	_, err := h.out.Write([]byte(sb.String()))
+	return err
+}
+
+func (h *PrettyHandler) writeAttr(sb *strings.Builder, a slog.Attr) {
+	if a.Equal(slog.Attr{}) {
+		return
+	}
+
+	sb.WriteString(colorCyan)
+	sb.WriteString(a.Key)
+	sb.WriteString(colorReset)
+	sb.WriteString("=")
+	sb.WriteString(colorYellow)
+	sb.WriteString(fmt.Sprintf("%v", a.Value.Any()))
+	sb.WriteString(colorReset)
+	sb.WriteString(" ")
+}
+
+func (h *PrettyHandler) formatLevel(level slog.Level) (string, string) {
+	switch {
+	case level >= slog.LevelError:
+		return "❌ ERROR", colorRed
+	case level >= slog.LevelWarn:
+		return "⚠️  WARN ", colorYellow
+	case level >= slog.LevelInfo:
+		return "ℹ️  INFO ", colorBlue
+	default:
+		return "🔍 DEBUG", colorMagenta
+	}
+}
+
+func (h *PrettyHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	newAttrs := make([]slog.Attr, len(h.attrs)+len(attrs))
+	copy(newAttrs, h.attrs)
+	copy(newAttrs[len(h.attrs):], attrs)
+	return &PrettyHandler{
+		opts:   h.opts,
+		mu:     h.mu,
+		out:    h.out,
+		attrs:  newAttrs,
+		groups: h.groups,
+	}
+}
+
+func (h *PrettyHandler) WithGroup(name string) slog.Handler {
+	newGroups := make([]string, len(h.groups)+1)
+	copy(newGroups, h.groups)
+	newGroups[len(h.groups)] = name
+	return &PrettyHandler{
+		opts:   h.opts,
+		mu:     h.mu,
+		out:    h.out,
+		attrs:  h.attrs,
+		groups: newGroups,
+	}
+}
+
 // InitLogger initializes the global logger
 func InitLogger() {
 	opts := &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}
 
+	var handler slog.Handler
+
 	if gin.Mode() == gin.DebugMode {
 		opts.Level = slog.LevelDebug
-		opts.AddSource = true
+		// Use pretty handler in development
+		handler = NewPrettyHandler(os.Stdout, opts)
+	} else {
+		// Use JSON handler in production
+		handler = slog.NewJSONHandler(os.Stdout, opts)
 	}
 
-	handler := slog.NewJSONHandler(os.Stdout, opts)
 	Logger = slog.New(handler)
 	slog.SetDefault(Logger)
 }
