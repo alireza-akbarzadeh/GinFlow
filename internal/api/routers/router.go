@@ -22,7 +22,7 @@ func SetupRouter(handler *handlers.Handler, jwtSecret string, userRepo interface
 	// Add Recovery middleware to recover from panics
 	router.Use(gin.Recovery())
 
-	// Add Structured Logger middleware
+	// Add Structured Logger middleware (includes pretty JSON in dev mode)
 	router.Use(middleware.Logger())
 
 	// Apply rate limiting middleware globally

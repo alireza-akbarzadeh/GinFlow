@@ -1,12 +1,15 @@
 package middleware
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/alireza-akbarzadeh/ginflow/internal/config"
+	jsonpretty "github.com/ansidev/json-pretty"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,8 +26,19 @@ const (
 	colorBold   = "\033[1m"
 )
 
+// responseBodyWriter wraps gin.ResponseWriter to capture response body
+type responseBodyWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w *responseBodyWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
 // Logger creates a structured logging middleware
-// In development mode (GIN_MODE != release), it uses pretty console output
+// In development mode (GIN_MODE != release), it uses pretty console output with JSON formatting
 // In production mode, it uses JSON structured logging
 func Logger() gin.HandlerFunc {
 	isDev := config.GetEnvString("GIN_MODE", "debug") != "release"
@@ -39,6 +53,13 @@ func Logger() gin.HandlerFunc {
 func devLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
+
+		// Wrap response writer to capture body
+		rbw := &responseBodyWriter{
+			ResponseWriter: c.Writer,
+			body:           bytes.NewBufferString(""),
+		}
+		c.Writer = rbw
 
 		// Process request
 		c.Next()
@@ -63,6 +84,15 @@ func devLogger() gin.HandlerFunc {
 			colorGray, latencyStr, colorReset,
 			getStatusEmoji(statusCode),
 		)
+
+		// Pretty print JSON response if applicable
+		contentType := c.Writer.Header().Get("Content-Type")
+		if strings.Contains(contentType, "application/json") && rbw.body.Len() > 0 {
+			prettyJSON := jsonpretty.Pretty(rbw.body.Bytes())
+			if len(prettyJSON) > 0 {
+				fmt.Printf("%s📦 Response:%s\n%s\n", colorCyan, colorReset, string(prettyJSON))
+			}
+		}
 
 		// Print errors if any
 		if len(c.Errors) > 0 {
